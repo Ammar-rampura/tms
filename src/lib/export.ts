@@ -8,10 +8,11 @@ export function exportToCsv(filename: string, rows: object[]) {
     keys.join(separator) +
     '\n' +
     rows.map(row => {
+      const r = row as Record<string, any>;
       return keys.map(k => {
-        let cell = row[k as keyof typeof row] === null || row[k as keyof typeof row] === undefined ? '' : row[k as keyof typeof row];
+        let cell: any = r[k] === null || r[k] === undefined ? '' : r[k];
         cell = cell instanceof Date ? cell.toLocaleString() : cell.toString().replace(/"/g, '""');
-        if (cell.search(/("|,|\n)/g) >= 0) {
+        if (typeof cell === 'string' && cell.search(/("|,|\n)/g) >= 0) {
           cell = `"${cell}"`;
         }
         return cell;

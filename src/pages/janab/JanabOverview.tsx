@@ -4,6 +4,7 @@ import { Users, Wallet, AlertCircle, UserPlus, BarChart3 } from 'lucide-react'
 import { useData } from '@/context/DataContext'
 import { StatsCard } from '@/components/StatsCard'
 import { StudentCard } from '@/components/StudentCard'
+import { getMarhalaStatus } from '@/lib/quran'
 import { Skeleton } from '@/components/Skeleton'
 import { Link } from 'react-router-dom'
 
@@ -21,8 +22,8 @@ export function JanabOverview() {
   const recent = students.slice(0, 4)
 
   const hifzBreakdown = useMemo(() => {
-    const counts = { Completed: 0, Ongoing: 0, 'Not Started': 0 }
-    students.forEach((s) => (counts[s.hifzStatus] += 1))
+    const counts = { Completed: 0, Pending: 0, 'Not Started': 0 }
+    students.forEach((s) => (counts[getMarhalaStatus(s.completedJuz).type] += 1))
     return counts
   }, [students])
 
@@ -57,7 +58,7 @@ export function JanabOverview() {
             <h3 className="font-display text-base font-semibold text-ink dark:text-primary-50">Hifz Progress Breakdown</h3>
           </div>
           <div className="space-y-3">
-            {(['Completed', 'Ongoing', 'Not Started'] as const).map((key) => {
+            {(['Completed', 'Pending', 'Not Started'] as const).map((key) => {
               const value = hifzBreakdown[key]
               const pct = stats.total ? Math.round((value / stats.total) * 100) : 0
               return (
