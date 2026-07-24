@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+.dark {
+  color-scheme: dark;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  @apply bg-paper text-ink font-sans antialiased;
+  background-image:
+    radial-gradient(circle at 8% 0%, rgba(176,141,62,0.06), transparent 40%),
+    radial-gradient(circle at 100% 10%, rgba(31,75,67,0.05), transparent 45%);
+}
+
+.dark body {
+  @apply bg-primary-900 text-primary-50;
+}
+
+::selection {
+  background: rgba(176, 141, 62, 0.28);
+}
+
+/* Scrollbars */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(23,56,50,0.18); border-radius: 999px; }
+.dark ::-webkit-scrollbar-thumb { background: rgba(210,228,223,0.18); }
+
+.glass {
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+}
+.dark .glass {
+  background: rgba(16, 39, 35, 0.55);
+}
+
+.card-surface {
+  @apply bg-panel dark:bg-primary-800/60 border border-primary-900/[0.06] dark:border-primary-100/10 shadow-card rounded-2xl;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, rgba(23,56,50,0.06) 25%, rgba(23,56,50,0.12) 37%, rgba(23,56,50,0.06) 63%);
+  background-size: 800px 100%;
+  @apply animate-shimmer rounded-lg;
+}
+.dark .skeleton {
+  background: linear-gradient(90deg, rgba(210,228,223,0.06) 25%, rgba(210,228,223,0.14) 37%, rgba(210,228,223,0.06) 63%);
+  background-size: 800px 100%;
+}
+
+.arch-motif {
+  background-image: radial-gradient(circle at 50% 100%, transparent 68%, currentColor 69%, currentColor 71%, transparent 72%);
+}
+
+.focus-ring {
+  @apply outline-none ring-0 focus-visible:ring-2 focus-visible:ring-brass-400 focus-visible:ring-offset-2 focus-visible:ring-offset-paper dark:focus-visible:ring-offset-primary-900;
+}
