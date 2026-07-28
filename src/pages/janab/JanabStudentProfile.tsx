@@ -19,7 +19,7 @@ export function JanabStudentProfile() {
   const navigate = useNavigate()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [form, setForm] = useState({
-    name: '', age: 0, mobile: '', fatherName: '', fatherIts: '', motherName: '', motherIts: '', parentNumber: '', email: '', address: '', program: 'Tahfeez' as Program, completedJuz: [] as number[], remarks: '',
+    name: '', age: 0, mobile: '', fatherName: '', fatherIts: '', motherName: '', motherIts: '', fatherMobile: '', motherMobile: '', email: '', address: '', program: 'Tahfeez' as Program, completedJuz: [] as number[], remarks: '', monthlyFee: 0, status: 'active' as 'active' | 'inactive',
   })
 
   const student = students.find((s) => s.id === id)
@@ -34,12 +34,15 @@ export function JanabStudentProfile() {
         fatherIts: student.fatherIts,
         motherName: student.motherName,
         motherIts: student.motherIts,
-        parentNumber: student.parentNumber,
+        fatherMobile: student.fatherMobile,
+        motherMobile: student.motherMobile,
         email: student.email,
         address: student.address,
         program: student.program,
         completedJuz: student.completedJuz || [],
         remarks: student.remarks ?? '',
+        monthlyFee: student.monthlyFee,
+        status: student.status,
       })
     }
   }, [student?.id])
@@ -58,7 +61,7 @@ export function JanabStudentProfile() {
   }
 
   async function handleSave() {
-    await updateStudent(student!.id, { ...form, age: Number(form.age) })
+    await updateStudent(student!.id, { ...form, age: Number(form.age), monthlyFee: Number(form.monthlyFee) })
     toast.success('Profile updated successfully')
   }
 
@@ -116,8 +119,12 @@ export function JanabStudentProfile() {
             <Input value={form.motherIts} onChange={(e) => setForm({ ...form, motherIts: e.target.value })} />
           </div>
           <div>
-            <Label>Parent Number</Label>
-            <Input value={form.parentNumber} onChange={(e) => setForm({ ...form, parentNumber: e.target.value })} />
+            <Label>Father's Mobile Number</Label>
+            <Input value={form.fatherMobile} onChange={(e) => setForm({ ...form, fatherMobile: e.target.value })} />
+          </div>
+          <div>
+            <Label>Mother's Mobile Number</Label>
+            <Input value={form.motherMobile} onChange={(e) => setForm({ ...form, motherMobile: e.target.value })} />
           </div>
           <div>
             <Label>Email</Label>
@@ -137,6 +144,21 @@ export function JanabStudentProfile() {
               <option value="Tahfeez">Tahfeez</option>
               <option value="Taiseer">Taiseer</option>
             </select>
+          </div>
+          <div>
+            <Label>Status</Label>
+            <select
+              value={form.status}
+              onChange={(e) => setForm({ ...form, status: e.target.value as 'active' | 'inactive' })}
+              className="h-11 w-full rounded-xl border border-primary-900/12 bg-white/70 px-3.5 text-sm dark:border-primary-100/12 dark:bg-primary-900/40"
+            >
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+          <div>
+            <Label>Monthly Fee</Label>
+            <Input type="number" value={form.monthlyFee} onChange={(e) => setForm({ ...form, monthlyFee: Number(e.target.value) })} />
           </div>
           <div className="sm:col-span-2">
             <Label>Quran Details</Label>

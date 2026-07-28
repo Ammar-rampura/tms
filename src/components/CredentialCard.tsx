@@ -43,10 +43,6 @@ export function CredentialCard({ student, onDone }: { student: Student; onDone: 
           <p className="text-[11px] uppercase tracking-wide text-brass-700/70 dark:text-brass-300/70">Password</p>
           <p className="font-mono text-xl font-bold tracking-wide text-brass-700 dark:text-brass-300">{student.password}</p>
         </div>
-        <div className="rounded-xl bg-primary-900/[0.03] p-4 text-left dark:bg-primary-100/[0.04]">
-          <p className="text-[11px] uppercase tracking-wide text-ink/45 dark:text-primary-100/45">Monthly Fee</p>
-          <p className="mt-0.5 font-mono text-lg font-bold text-ink dark:text-primary-50">₹1000 <span className="text-xs font-sans font-normal text-ink/45">· Payable offline at office</span></p>
-        </div>
       </div>
 
       <div className="mt-6 flex gap-3 print:hidden">

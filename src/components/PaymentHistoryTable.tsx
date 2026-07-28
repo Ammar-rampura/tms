@@ -16,7 +16,7 @@ export function PaymentHistoryTable({ history }: { history: PaymentRecord[] }) {
   const total = history.reduce((sum, r) => sum + r.amount, 0)
 
   return (
-    <div className="overflow-hidden rounded-xl border border-primary-900/10 dark:border-primary-100/10">
+    <div className="overflow-x-auto overflow-y-hidden rounded-xl border border-primary-900/10 dark:border-primary-100/10">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-primary-900/10 bg-primary-900/[0.03] text-left text-xs uppercase tracking-wide text-ink/50 dark:border-primary-100/10 dark:bg-primary-100/[0.04] dark:text-primary-100/50">

@@ -18,7 +18,14 @@ export function ProfileCard({ student }: { student: Student }) {
           <MarhalaBadge status={getMarhalaStatus(student.completedJuz)} />
         </div>
 
-        <h2 className="mt-3 font-display text-lg font-semibold text-ink dark:text-primary-50">{student.name}</h2>
+        <h2 className="mt-3 font-display text-lg font-semibold text-ink dark:text-primary-50 flex items-center gap-2">
+          {student.name}
+          {student.status === 'inactive' && (
+            <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">
+              Inactive
+            </span>
+          )}
+        </h2>
         <p className="font-mono text-xs text-ink/45 dark:text-primary-100/45">{student.id}</p>
 
         <div className="mt-4 grid grid-cols-1 gap-2.5 text-sm sm:grid-cols-2">

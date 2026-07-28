@@ -97,14 +97,16 @@ export function JanabStudents() {
       'Marhala Status': getMarhalaStatus(s.completedJuz || []).text,
       Mobile: s.mobile,
       'Father Name': s.fatherName,
-      'Mother Name': s.motherName,
-      'Parent Number': s.parentNumber,
+      "Mother's ITS": s.motherIts,
+      'Father Mobile': s.fatherMobile,
+      'Mother Mobile': s.motherMobile,
       Email: s.email,
       Address: s.address,
       'Monthly Fee': s.monthlyFee,
       'Paid Amount': s.paidAmount,
       'Due Amount': s.dueAmount,
       'Fee Status': s.feeStatus,
+      Status: s.status,
       Remarks: s.remarks || '',
       'Registered Date': formatDate(s.createdDate)
     }))
@@ -119,12 +121,12 @@ export function JanabStudents() {
           <p className="text-sm text-ink/50 dark:text-primary-100/50">{filtered.length} of {students.length} students</p>
         </div>
         <div className="flex flex-col gap-3 sm:flex-row">
-          <Button variant="outline" size="sm" onClick={handleExport} className="h-10">
+          <Button variant="outline" size="sm" onClick={handleExport} className="h-10 w-full sm:w-auto">
             <Download className="mr-2 h-4 w-4" /> Export Excel
           </Button>
           <SearchBar value={query} onChange={(v) => { setQuery(v); setPage(1) }} className="sm:w-72" />
           <Select value={marhalaFilter} onValueChange={(v) => { setMarhalaFilter(v); setPage(1) }}>
-            <SelectTrigger className="sm:w-44"><SelectValue placeholder="Hifz Status" /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-44"><SelectValue placeholder="Hifz Status" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Hifz Statuses</SelectItem>
               <SelectItem value="Completed">Completed</SelectItem>
@@ -133,7 +135,7 @@ export function JanabStudents() {
             </SelectContent>
           </Select>
           <Select value={ageFilter} onValueChange={(v) => { setAgeFilter(v); setPage(1) }}>
-            <SelectTrigger className="sm:w-36"><SelectValue placeholder="Age Group" /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-36"><SelectValue placeholder="Age Group" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Ages</SelectItem>
               <SelectItem value="0-10">0 - 10</SelectItem>
@@ -168,7 +170,7 @@ export function JanabStudents() {
             </div>
           )}
           <Select value={sortKey} onValueChange={(v) => setSortKey(v as SortKey)}>
-            <SelectTrigger className="sm:w-44"><ArrowUpDown className="mr-1 h-3.5 w-3.5" /><SelectValue placeholder="Sort by" /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-44"><ArrowUpDown className="mr-1 h-3.5 w-3.5" /><SelectValue placeholder="Sort by" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="createdDate">Newest First</SelectItem>
               <SelectItem value="name">Name (A–Z)</SelectItem>
@@ -213,7 +215,14 @@ export function JanabStudents() {
                   className="border-b border-primary-900/[0.05] last:border-0 hover:bg-primary-900/[0.02] dark:border-primary-100/[0.06] dark:hover:bg-primary-100/[0.03]"
                 >
                   <td className="px-4 py-3">
-                    <p className="font-semibold text-ink dark:text-primary-50">{student.name}</p>
+                    <p className="font-semibold text-ink dark:text-primary-50 flex items-center gap-2">
+                      {student.name}
+                      {student.status === 'inactive' && (
+                        <span className="inline-flex items-center rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                          Inactive
+                        </span>
+                      )}
+                    </p>
                     <p className="font-mono text-xs text-ink/45 dark:text-primary-100/45">{student.id}</p>
                   </td>
                   <td className="px-4 py-3 font-mono text-ink/70 dark:text-primary-100/70">{student.its}</td>
@@ -278,6 +287,7 @@ export function JanabStudents() {
                   address: String(form.get('address')),
                   remarks: String(form.get('remarks') || ''),
                   program: form.get('program') as Program,
+                  status: form.get('status') as 'active' | 'inactive',
                 })
                 toast.success('Student updated')
                 setEditing(null)
@@ -300,6 +310,17 @@ export function JanabStudents() {
                 >
                   <option value="Tahfeez">Tahfeez</option>
                   <option value="Taiseer">Taiseer</option>
+                </select>
+              </div>
+              <div>
+                <Label>Status</Label>
+                <select
+                  name="status"
+                  defaultValue={editing.status}
+                  className="h-11 w-full rounded-xl border border-primary-900/12 bg-white/70 px-3.5 text-sm dark:border-primary-100/12 dark:bg-primary-900/40"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
                 </select>
               </div>
               <div>

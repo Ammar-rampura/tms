@@ -24,12 +24,12 @@ const schema = z.object({
   fatherIts: z.string().regex(/^\d{8}$/, "Father's ITS must be exactly 8 digits"),
   motherName: z.string().min(2, "Mother's name is required"),
   motherIts: z.string().regex(/^\d{8}$/, "Mother's ITS must be exactly 8 digits"),
-  parentNumber: z.string().regex(/^\d{10}$/, 'Enter a valid 10-digit parent number'),
+  fatherMobile: z.string().regex(/^\d{10}$/, 'Enter a valid 10-digit mobile number'),
+  motherMobile: z.string().regex(/^\d{10}$/, 'Enter a valid 10-digit mobile number'),
   email: z.string().email('Enter a valid email address'),
   address: z.string().min(5, 'Address is required'),
   program: z.enum(['Tahfeez', 'Taiseer']),
   completedJuz: z.array(z.number()),
-  monthlyFee: z.coerce.number().min(1000, 'Fee must be at least 1000'),
   remarks: z.string().optional(),
 })
 
@@ -37,14 +37,12 @@ type FormValues = z.infer<typeof schema>
 
 const steps = [
   { label: 'Personal', description: 'Basic details' },
-  { label: 'Quran Details', description: 'Hifz progress' },
-  { label: 'Fee', description: 'Confirm & submit' },
+  { label: 'Quran Details', description: 'Confirm & submit' },
 ]
 
 const stepFields: (keyof FormValues)[][] = [
-  ['name', 'age', 'its', 'mobile', 'fatherName', 'fatherIts', 'motherName', 'motherIts', 'parentNumber', 'email', 'address', 'program'],
+  ['name', 'age', 'its', 'mobile', 'fatherName', 'fatherIts', 'motherName', 'motherIts', 'fatherMobile', 'motherMobile', 'email', 'address', 'program'],
   ['completedJuz', 'remarks'],
-  ['monthlyFee'],
 ]
 
 export function StudentRegister() {
@@ -64,7 +62,7 @@ export function StudentRegister() {
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { program: 'Tahfeez', completedJuz: [], monthlyFee: 1000 },
+    defaultValues: { program: 'Tahfeez', completedJuz: [] },
     mode: 'onBlur',
   })
 
@@ -79,7 +77,6 @@ export function StudentRegister() {
 
   const program = watch('program')
   const completedJuz = watch('completedJuz')
-  const monthlyFee = watch('monthlyFee')
 
   const toggleJuz = (juz: number) => {
     if (completedJuz.includes(juz)) {
@@ -159,7 +156,7 @@ export function StudentRegister() {
                 >
                   <div className="sm:col-span-2">
                     <Label>Full Name</Label>
-                    <Input placeholder="e.g. Ahmed Raza" {...register('name')} error={!!errors.name} />
+                    <Input placeholder="e.g. Ammar " {...register('name')} error={!!errors.name} />
                     <FieldError>{errors.name?.message}</FieldError>
                   </div>
                   <div>
@@ -210,9 +207,14 @@ export function StudentRegister() {
                     <FieldError>{errors.motherIts?.message}</FieldError>
                   </div>
                   <div>
-                    <Label>Parent Number</Label>
-                    <Input placeholder="10-digit parent mobile" {...register('parentNumber')} error={!!errors.parentNumber} />
-                    <FieldError>{errors.parentNumber?.message}</FieldError>
+                    <Label>Father's Mobile Number</Label>
+                    <Input placeholder="10-digit mobile" {...register('fatherMobile')} error={!!errors.fatherMobile} />
+                    <FieldError>{errors.fatherMobile?.message}</FieldError>
+                  </div>
+                  <div>
+                    <Label>Mother's Mobile Number</Label>
+                    <Input placeholder="10-digit mobile" {...register('motherMobile')} error={!!errors.motherMobile} />
+                    <FieldError>{errors.motherMobile?.message}</FieldError>
                   </div>
                   <div>
                     <Label>Email</Label>
@@ -275,43 +277,6 @@ export function StudentRegister() {
                 </motion.div>
               )}
 
-              {step === 2 && (
-                <motion.div key="step-2" initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}>
-                  <div className="rounded-2xl border border-brass-500/25 bg-gradient-to-br from-brass-500/10 to-transparent p-6">
-                    <div className="flex items-center gap-2.5 text-brass-700 dark:text-brass-300">
-                      <IndianRupee className="h-5 w-5" />
-                      <h3 className="font-display text-lg font-semibold">Select Monthly Fee</h3>
-                    </div>
-                    
-                    <div className="mt-6 flex flex-col gap-3">
-                      {[1000, 1500, 2500].map(amount => (
-                        <label key={amount} className={`flex cursor-pointer items-center justify-between rounded-xl border p-4 transition-all ${monthlyFee === amount ? 'border-brass-500 bg-brass-500/10' : 'border-primary-900/10 bg-white/50 hover:bg-white/80 dark:border-primary-100/10 dark:bg-primary-900/20 dark:hover:bg-primary-900/40'}`}>
-                          <div className="flex items-center gap-3">
-                            <input 
-                              type="radio" 
-                              name="monthlyFee" 
-                              value={amount} 
-                              checked={monthlyFee === amount}
-                              onChange={() => setValue('monthlyFee', amount)}
-                              className="accent-brass-600 h-4 w-4"
-                            />
-                            <span className="font-semibold text-ink dark:text-primary-50">₹{amount}</span>
-                          </div>
-                          <span className="text-sm text-ink/55 dark:text-primary-100/55">per month</span>
-                        </label>
-                      ))}
-                    </div>
-
-                    <div className="mt-6 flex items-center justify-between rounded-xl bg-white/60 dark:bg-primary-900/30 px-4 py-3 text-sm">
-                      <span className="font-medium text-ink/60 dark:text-primary-100/60">Payment Mode</span>
-                      <span className="font-semibold text-ink dark:text-primary-50">Offline at Office</span>
-                    </div>
-                    <p className="mt-3 text-xs text-ink/45 dark:text-primary-100/40">
-                      Once registered, a Student ID and password will be generated automatically for you.
-                    </p>
-                  </div>
-                </motion.div>
-              )}
             </AnimatePresence>
 
             <div className="mt-8 flex items-center justify-between">

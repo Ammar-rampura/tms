@@ -20,7 +20,8 @@ export interface Student {
   fatherIts: string
   motherName: string
   motherIts: string
-  parentNumber: string
+  fatherMobile: string
+  motherMobile: string
   email: string
   address: string
   program: Program
@@ -32,6 +33,7 @@ export interface Student {
   feeStatus: FeeStatus
   paymentHistory: PaymentRecord[]
   createdDate: string // ISO date
+  status: 'active' | 'inactive'
 }
 
 export type Role = 'janab' | 'accounts' | 'student'
@@ -51,11 +53,11 @@ export interface RegistrationInput {
   fatherIts: string
   motherName: string
   motherIts: string
-  parentNumber: string
+  fatherMobile: string
+  motherMobile: string
   email: string
   address: string
   program: Program
   completedJuz: number[]
   remarks?: string
-  monthlyFee: number
 }
