@@ -4,12 +4,6 @@ import { db } from '@/lib/db'
 
 const SESSION_KEY = 'tehfiz_session_v1'
 
-// Demo staff credentials, as specified in the product brief.
-const STAFF_CREDENTIALS: Record<string, { password: string; name: string }> = {
-  janab: { password: 'janab123', name: 'Janab (Super Admin)' },
-  accounts: { password: 'accounts123', name: 'Accounts Office' },
-}
-
 interface AuthContextValue {
   user: AuthUser | null
   loading: boolean
@@ -43,10 +37,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function loginStaff(role: 'janab' | 'accounts', username: string, password: string) {
-    const record = STAFF_CREDENTIALS[role]
-    if (!record) return false
-    if (username.trim().toLowerCase() !== role || password !== record.password) return false
-    persist({ role, id: role, name: record.name })
+    if (username.trim().toLowerCase() !== role) return false
+    const staff = await db.authenticateStaff(role, password)
+    if (!staff) return false
+    persist({ role, id: role, name: staff.name })
     return true
   }
 

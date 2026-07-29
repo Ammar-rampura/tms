@@ -9,10 +9,12 @@ import {
   ChevronsLeft,
   BookOpenText,
   LogOut,
+  KeyRound,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
 import { useState } from 'react'
+import { ChangePasswordDialog } from '@/components/ChangePasswordDialog'
 
 interface NavItem {
   to: string
@@ -35,6 +37,7 @@ export const accountsItems: NavItem[] = [
 export function Sidebar() {
   const { user, logout } = useAuth()
   const [collapsed, setCollapsed] = useState(false)
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false)
   const items = user?.role === 'janab' ? janabItems : accountsItems
 
   return (
@@ -99,6 +102,15 @@ export function Sidebar() {
       </nav>
 
       <div className="space-y-1.5 border-t border-primary-900/[0.06] dark:border-primary-100/10 p-3">
+        {(user?.role === 'janab' || user?.role === 'accounts') && (
+          <button
+            onClick={() => setShowPasswordDialog(true)}
+            className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-ink/70 hover:bg-primary-900/[0.05] dark:text-primary-100/70 dark:hover:bg-primary-100/[0.06]"
+          >
+            <KeyRound className="h-[18px] w-[18px]" />
+            {!collapsed && 'Change Password'}
+          </button>
+        )}
         <button
           onClick={logout}
           className="flex w-full items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-red-500 hover:bg-red-500/10"
@@ -116,6 +128,11 @@ export function Sidebar() {
           {!collapsed && 'Collapse'}
         </button>
       </div>
+
+      <ChangePasswordDialog 
+        open={showPasswordDialog} 
+        onOpenChange={setShowPasswordDialog} 
+      />
     </motion.aside>
   )
 }

@@ -2,6 +2,12 @@ import type { PaymentRecord, RegistrationInput, Student } from '@/types'
 import { supabase } from '@/lib/supabase'
 import bcrypt from 'bcryptjs'
 
+export interface DatabaseStaff {
+  role: 'janab' | 'accounts'
+  password: string
+  name: string
+}
+
 interface DatabaseStudent {
   id: string
   password: string
@@ -307,6 +313,71 @@ export const db = {
     } catch (err) {
       if (err instanceof Error) throw err
       handleDbError(err, 'authenticating student')
+    }
+  },
+
+  async authenticateStaff(role: 'janab' | 'accounts', password: string): Promise<DatabaseStaff | null> {
+    try {
+      const { data, error } = await supabase
+        .from('staff')
+        .select('*')
+        .eq('role', role)
+        .single()
+
+      if (error) {
+        if (error.code === 'PGRST116') return null
+        handleDbError(error, 'authenticating staff')
+      }
+
+      if (data) {
+        const isValid = bcrypt.compareSync(password, data.password)
+        if (isValid) {
+          return data as DatabaseStaff
+        }
+      }
+
+      return null
+    } catch (err) {
+      if (err instanceof Error) throw err
+      handleDbError(err, 'authenticating staff')
+    }
+  },
+
+  async updateStaffPassword(role: 'janab' | 'accounts', currentPassword: string, newPassword: string): Promise<boolean> {
+    try {
+      // Verify current password first
+      const { data, error: fetchError } = await supabase
+        .from('staff')
+        .select('password')
+        .eq('role', role)
+        .single()
+
+      if (fetchError) {
+        handleDbError(fetchError, 'fetching staff password')
+      }
+
+      if (!data) return false
+
+      const isValid = bcrypt.compareSync(currentPassword, data.password)
+      if (!isValid) {
+        throw new Error('Incorrect current password')
+      }
+
+      const hashedNewPassword = bcrypt.hashSync(newPassword, 10)
+
+      const { error: updateError } = await supabase
+        .from('staff')
+        .update({ password: hashedNewPassword })
+        .eq('role', role)
+
+      if (updateError) {
+        handleDbError(updateError, 'updating staff password')
+      }
+
+      return true
+    } catch (err) {
+      if (err instanceof Error) throw err
+      handleDbError(err, 'updating staff password')
     }
   },
 
