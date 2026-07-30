@@ -15,7 +15,7 @@ import { useData } from '@/context/DataContext'
 import { exportToCsv } from '@/lib/export'
 import { SearchBar } from '@/components/SearchBar'
 import { FeeStatusBadge, MarhalaBadge } from '@/components/StatusBadge'
-import { getMarhalaStatus } from '@/lib/quran'
+import { getMarhalaStatus, formatCompletedJuz } from '@/lib/quran'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog'
@@ -26,7 +26,7 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import type { Program, Student } from '@/types'
 import { toast } from 'sonner'
 
-const PAGE_SIZE = 8
+
 
 type SortKey = 'name' | 'createdDate' | 'dueAmount'
 
@@ -38,6 +38,7 @@ export function JanabStudents() {
   const [customAgeRange, setCustomAgeRange] = useState<{min: number, max: number}>({ min: 0, max: 100 })
   const [sortKey, setSortKey] = useState<SortKey>('createdDate')
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
   const [editing, setEditing] = useState<Student | null>(null)
   const [deleting, setDeleting] = useState<Student | null>(null)
 
@@ -73,8 +74,8 @@ export function JanabStudents() {
     return list
   }, [students, query, marhalaFilter, ageFilter, customAgeRange, sortKey])
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
-  const paged = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize))
+  const paged = filtered.slice((page - 1) * pageSize, page * pageSize)
 
   function changePage(next: number) {
     setPage(Math.min(Math.max(1, next), totalPages))
@@ -227,7 +228,19 @@ export function JanabStudents() {
                   </td>
                   <td className="px-4 py-3 font-mono text-ink/70 dark:text-primary-100/70">{student.its}</td>
                   <td className="px-4 py-3 text-ink/70 dark:text-primary-100/70">{student.age}</td>
-                  <td className="px-4 py-3"><MarhalaBadge status={getMarhalaStatus(student.completedJuz || [])} /></td>
+                  <td className="px-4 py-3">
+                    {student.completedJuz && student.completedJuz.length > 0 ? (
+                      <div className="flex flex-col gap-1">
+                        {formatCompletedJuz(student.completedJuz).map((item, idx) => (
+                          <span key={idx} className="whitespace-nowrap text-xs text-ink/70 dark:text-primary-100/70">
+                            <span className="font-medium text-ink dark:text-primary-50">{item.marhala}</span> – {item.juzList}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-ink/40 dark:text-primary-100/40">Not Started</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3"><FeeStatusBadge status={student.feeStatus} /></td>
                   <td className="px-4 py-3 font-mono text-xs">
                     <span className="text-primary-600 dark:text-primary-300">{formatCurrency(student.paidAmount)}</span>
@@ -257,9 +270,20 @@ export function JanabStudents() {
 
       {filtered.length > 0 && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-ink/50 dark:text-primary-100/50">
-            Page {page} of {totalPages}
-          </p>
+          <div className="flex items-center gap-4 text-sm text-ink/50 dark:text-primary-100/50">
+            <p>Page {page} of {totalPages}</p>
+            <div className="flex items-center gap-2">
+              <span>Show</span>
+              <Select value={pageSize.toString()} onValueChange={(v) => { setPageSize(Number(v)); setPage(1) }}>
+                <SelectTrigger className="w-[80px] h-8"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                  <SelectItem value="100">100</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => changePage(page - 1)} disabled={page === 1}>
               <ChevronLeft className="h-4 w-4" /> Prev
