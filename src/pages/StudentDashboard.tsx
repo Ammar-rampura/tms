@@ -11,13 +11,15 @@ import { PaymentHistoryTable } from '@/components/PaymentHistoryTable'
 import { DarkModeToggle } from '@/components/DarkModeToggle'
 import { Skeleton } from '@/components/Skeleton'
 import { Button } from '@/components/ui/button'
-import { BookOpenText } from 'lucide-react'
+import { BookOpenText, KeyRound } from 'lucide-react'
+import { ChangePasswordDialog } from '@/components/ChangePasswordDialog'
 
 export function StudentDashboard() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [student, setStudent] = useState<Student | null>(null)
   const [loading, setLoading] = useState(true)
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -46,8 +48,11 @@ export function StudentDashboard() {
         </div>
         <div className="flex items-center gap-3">
           <DarkModeToggle />
+          <Button variant="outline" size="sm" onClick={() => setPasswordDialogOpen(true)}>
+            <KeyRound className="h-4 w-4" /> <span className="hidden sm:inline">Change Password</span>
+          </Button>
           <Button variant="outline" size="sm" onClick={handleLogout}>
-            <LogOut className="h-4 w-4" /> Sign out
+            <LogOut className="h-4 w-4" /> <span className="hidden sm:inline">Sign out</span>
           </Button>
         </div>
       </header>
@@ -94,6 +99,11 @@ export function StudentDashboard() {
           </div>
         )}
       </main>
+
+      <ChangePasswordDialog 
+        open={passwordDialogOpen} 
+        onOpenChange={setPasswordDialogOpen} 
+      />
     </div>
   )
 }

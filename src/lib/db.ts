@@ -294,7 +294,7 @@ export const db = {
       const { data, error } = await supabase
         .from('students')
         .select('*')
-        .eq('id', id)
+        .or(`id.eq.${id},its.eq.${id}`)
         .single()
 
       if (error) {
@@ -378,6 +378,43 @@ export const db = {
     } catch (err) {
       if (err instanceof Error) throw err
       handleDbError(err, 'updating staff password')
+    }
+  },
+
+  async updateStudentPassword(id: string, currentPassword: string, newPassword: string): Promise<boolean> {
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('students')
+        .select('password')
+        .eq('id', id)
+        .single()
+
+      if (fetchError) {
+        handleDbError(fetchError, 'fetching student password')
+      }
+
+      if (!data) return false
+
+      const isValid = bcrypt.compareSync(currentPassword, data.password)
+      if (!isValid) {
+        throw new Error('Incorrect current password')
+      }
+
+      const hashedNewPassword = bcrypt.hashSync(newPassword, 10)
+
+      const { error: updateError } = await supabase
+        .from('students')
+        .update({ password: hashedNewPassword })
+        .eq('id', id)
+
+      if (updateError) {
+        handleDbError(updateError, 'updating student password')
+      }
+
+      return true
+    } catch (err) {
+      if (err instanceof Error) throw err
+      handleDbError(err, 'updating student password')
     }
   },
 

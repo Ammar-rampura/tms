@@ -64,13 +64,19 @@ export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialo
       return setError('New passwords do not match')
     }
 
-    if (!user || (user.role !== 'janab' && user.role !== 'accounts')) {
+    if (!user) {
       return setError('Unauthorized to change password')
     }
 
     setLoading(true)
     try {
-      const success = await db.updateStaffPassword(user.role, currentPassword, newPassword)
+      let success = false
+      if (user.role === 'janab' || user.role === 'accounts') {
+        success = await db.updateStaffPassword(user.role, currentPassword, newPassword)
+      } else if (user.role === 'student') {
+        success = await db.updateStudentPassword(user.id, currentPassword, newPassword)
+      }
+
       if (success) {
         toast.success('Password updated successfully.')
         handleClose()
@@ -93,7 +99,7 @@ export function ChangePasswordDialog({ open, onOpenChange }: ChangePasswordDialo
           </div>
           <div>
             <DialogTitle>Change Password</DialogTitle>
-            <DialogDescription>Update your staff account password securely.</DialogDescription>
+            <DialogDescription>Update your account password securely.</DialogDescription>
           </div>
         </div>
 
