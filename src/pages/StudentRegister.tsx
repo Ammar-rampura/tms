@@ -17,7 +17,7 @@ import { toast } from 'sonner'
 
 const schema = z.object({
   name: z.string().min(2, 'Full name is required'),
-  age: z.coerce.number().min(4, 'Age must be at least 4').max(30, 'Age must be under 30'),
+  age: z.coerce.number(),
   its: z.string().regex(/^\d{8}$/, 'ITS number must be exactly 8 digits'),
   mobile: z.string().regex(/^\d{10}$/, 'Enter a valid 10-digit mobile number'),
   fatherName: z.string().min(2, "Father's name is required"),
