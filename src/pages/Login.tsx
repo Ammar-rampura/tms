@@ -149,9 +149,7 @@ export function Login() {
           ))}
         </div>
 
-        <p className="mt-10 text-xs text-ink/35 dark:text-primary-100/30">
-          Demo credentials — Janab: janab / janab123 · Accounts: accounts / accounts123
-        </p>
+
       </div>
 
       <Dialog open={panel !== null} onOpenChange={(open) => !open && setPanel(null)}>
