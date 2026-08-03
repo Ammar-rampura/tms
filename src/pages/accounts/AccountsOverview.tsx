@@ -147,8 +147,9 @@ export function AccountsOverview() {
       } else {
         toast.info(`Fees for ${MONTHS[selectedMonth-1]} ${selectedYear} are already generated.`)
       }
-    } catch (error) {
-      toast.error('Failed to generate monthly fees')
+    } catch (err) {
+      console.error('Error generating fees:', err)
+      toast.error(err instanceof Error ? err.message : 'Failed to generate monthly fees')
     } finally {
       setGenerating(false)
     }
