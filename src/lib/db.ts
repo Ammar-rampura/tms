@@ -424,6 +424,7 @@ export const db = {
   },
 
   async register(input: RegistrationInput): Promise<Student> {
+    console.log("Checking for duplicate ITS...");
     try {
       const { data: existingIts, error: checkError } = await supabase
         .from('students')
@@ -434,6 +435,7 @@ export const db = {
       if (checkError) handleDbError(checkError, 'checking duplicate ITS')
       if (existingIts) throw new Error('Student with this ITS already exists')
 
+      console.log("Fetching latest student ID...");
       const { data: allIds, error: fetchError } = await supabase
         .from('students')
         .select('id')
@@ -488,6 +490,7 @@ export const db = {
 
       const dbRow = studentToDatabase(studentData)
 
+      console.log("Creating student...");
       const { data, error: insertError } = await supabase
         .from('students')
         .insert(dbRow)
@@ -496,78 +499,90 @@ export const db = {
 
       if (insertError) handleDbError(insertError, 'registering student')
 
-      const now = new Date()
+      // -------------------------------------------------------------
+      // STUDENT IS CREATED - DO NOT THROW FATAL ERRORS AFTER THIS POINT
+      // -------------------------------------------------------------
+      try {
+        const now = new Date()
 
-      // Determine active billing month/year using app_settings table
-      let activeMonth = now.getMonth() + 1
-      let activeYear = now.getFullYear()
+        // Determine active billing month/year using app_settings table
+        let activeMonth = now.getMonth() + 1
+        let activeYear = now.getFullYear()
 
-      const { data: settings, error: fetchSettingsError } = await supabase
-        .from('app_settings')
-        .select('active_billing_month, active_billing_year')
-        .eq('id', 1)
-        .single() // Force single to throw PGRST116 if 0 rows are returned (due to RLS or missing row)
+        console.log("Fetching app settings...");
+        const { data: settings, error: fetchSettingsError } = await supabase
+          .from('app_settings')
+          .select('active_billing_month, active_billing_year')
+          .eq('id', 1)
+          .maybeSingle() // Use maybeSingle to prevent PGRST116 if 0 rows exist
 
-      if (fetchSettingsError) {
-        console.log({
-          action: 'register_fetch_failed',
-          selectError: fetchSettingsError
-        })
-        throw new Error(`DB Error [${fetchSettingsError.code}]: ${fetchSettingsError.message}`)
-      }
-
-      if (settings) {
-        activeMonth = settings.active_billing_month
-        activeYear = settings.active_billing_year
-      } else {
-        throw new Error('ERP configuration missing')
-      }
-
-      // Ensure no duplicate fee record is created
-      const { data: existingFee } = await supabase
-        .from('fee_records')
-        .select('id')
-        .eq('student_id', data.id)
-        .eq('billing_month', activeMonth)
-        .eq('billing_year', activeYear)
-        .maybeSingle()
-
-      if (!existingFee) {
-        let nextMonth = activeMonth
-        let nextMonthYear = activeYear
-        if (nextMonth > 11) {
-          nextMonth = 0
-          nextMonthYear++
-        }
-        const dueDate = new Date(nextMonthYear, nextMonth, 1)
-
-        const feeRecord = {
-          student_id: data.id,
-          billing_month: activeMonth,
-          billing_year: activeYear,
-          billing_date: now.toISOString().split('T')[0],
-          due_date: dueDate.toISOString().split('T')[0],
-          original_fee: studentData.monthlyFee,
-          scholarship_amount: 0,
-          amount: studentData.monthlyFee,
-          paid_amount: 0,
-          status: 'Pending',
-          payment_date: null,
-          payment_method: null,
-          receipt_number: null,
-          remarks: null
+        if (fetchSettingsError) {
+          console.log({
+            action: 'register_fetch_failed',
+            selectError: fetchSettingsError
+          })
+          console.error("Non-fatal error: Failed to fetch app settings.", fetchSettingsError)
+        } else if (settings) {
+          activeMonth = settings.active_billing_month
+          activeYear = settings.active_billing_year
+        } else {
+          console.error("Non-fatal error: ERP configuration missing, using fallback dates.")
         }
 
-        const { error: feeError } = await supabase
+        console.log("Checking for existing fee record...");
+        const { data: existingFee, error: existingFeeError } = await supabase
           .from('fee_records')
-          .insert(feeRecord)
-
-        if (feeError) {
-          await supabase.from('students').delete().eq('id', data.id)
-          handleDbError(feeError, 'creating initial fee record')
+          .select('id')
+          .eq('student_id', data.id)
+          .eq('billing_month', activeMonth)
+          .eq('billing_year', activeYear)
+          .maybeSingle()
+          
+        if (existingFeeError) {
+           console.error("Non-fatal error: Checking existing fee record failed.", existingFeeError)
         }
+
+        if (!existingFee && !existingFeeError) {
+          let nextMonth = activeMonth
+          let nextMonthYear = activeYear
+          if (nextMonth > 11) {
+            nextMonth = 0
+            nextMonthYear++
+          }
+          const dueDate = new Date(nextMonthYear, nextMonth, 1)
+
+          const feeRecord = {
+            student_id: data.id,
+            billing_month: activeMonth,
+            billing_year: activeYear,
+            billing_date: now.toISOString().split('T')[0],
+            due_date: dueDate.toISOString().split('T')[0],
+            original_fee: studentData.monthlyFee,
+            scholarship_amount: 0,
+            amount: studentData.monthlyFee,
+            paid_amount: 0,
+            status: 'Pending',
+            payment_date: null,
+            payment_method: null,
+            receipt_number: null,
+            remarks: null
+          }
+
+          console.log("Creating fee record...");
+          const { error: feeError } = await supabase
+            .from('fee_records')
+            .insert(feeRecord)
+
+          if (feeError) {
+            console.error("Non-fatal error: creating initial fee record failed.", feeError)
+          }
+        }
+      } catch (postInsertError) {
+        console.error("Non-fatal error during post-registration steps:", postInsertError)
       }
 
+      console.log("Generating credentials...");
+      console.log("Registration completed.");
       const returnedStudent = databaseToStudent(data as DatabaseStudent)
       returnedStudent.password = rawPassword
       
