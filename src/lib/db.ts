@@ -29,7 +29,7 @@ interface DatabaseStudent {
   monthly_fee: number
   paid_amount: number
   due_amount: number
-  fee_status: 'Paid' | 'Partial' | 'Due'
+  fee_status: 'Paid' | 'Partial' | 'Due' | 'Skipped'
   payment_history: PaymentRecord[]
   created_date: string
   status: 'active' | 'inactive'
