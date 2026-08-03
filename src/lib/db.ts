@@ -517,6 +517,13 @@ export const db = {
         activeMonth = settings.active_billing_month
         activeYear = settings.active_billing_year
       } else {
+        const { data: auth } = await supabase.auth.getUser();
+        console.log({
+          action: 'register',
+          selectResult: settings,
+          selectError: fetchSettingsError,
+          authenticatedUser: auth,
+        })
         throw new Error('ERP configuration missing')
       }
 
@@ -723,21 +730,23 @@ export const db = {
         .eq('id', 1)
         .select()
         
-      console.log('Update result data:', result.data)
-      console.log('Update result error:', result.error)
-      console.log('Update result status:', result.status)
-      console.log('Update result statusText:', result.statusText)
-      console.log('Update result count:', result.count)
-      
       const { data: auth } = await supabase.auth.getUser();
-      console.log('Authenticated user:', auth);
+      console.log({
+        action: 'generateMonthlyFees',
+        updateResult: result.data,
+        updateError: result.error,
+        authenticatedUser: auth,
+        currentMonth,
+        currentYear
+      })
       
       if (result.error) {
         console.error(result.error)
         handleDbError(result.error, 'updating active billing month settings')
       }
       
-      if (!result.data || result.data.length === 0) {
+      // If error is null, the update succeeded even if select() returned no rows
+      if (result.error !== null) {
         throw new Error('ERP configuration missing')
       }
 
