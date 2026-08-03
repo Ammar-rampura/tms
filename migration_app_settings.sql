@@ -9,4 +9,9 @@ CREATE TABLE app_settings (
 
 -- Initialize the row with the current system month/year as default
 INSERT INTO app_settings (id, active_billing_month, active_billing_year)
-VALUES (1, EXTRACT(MONTH FROM CURRENT_DATE), EXTRACT(YEAR FROM CURRENT_DATE));
+VALUES (1, EXTRACT(MONTH FROM CURRENT_DATE), EXTRACT(YEAR FROM CURRENT_DATE))
+ON CONFLICT (id) DO NOTHING;
+
+-- Disable Row Level Security so the application can read/write freely 
+-- (since this app uses a custom authentication system)
+ALTER TABLE app_settings DISABLE ROW LEVEL SECURITY;
