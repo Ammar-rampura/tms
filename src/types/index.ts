@@ -1,6 +1,6 @@
 export type Program = 'Tahfeez' | 'Taiseer'
 
-export type FeeStatus = 'Paid' | 'Partial' | 'Due'
+export type FeeStatus = 'Paid' | 'Partial' | 'Due' | 'Skipped'
 
 export interface PaymentRecord {
   id: string

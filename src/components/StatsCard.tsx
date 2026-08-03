@@ -26,7 +26,7 @@ interface StatsCardProps {
   prefix?: string
   suffix?: string
   icon: LucideIcon
-  tone?: 'primary' | 'brass' | 'neutral'
+  tone?: 'primary' | 'brass' | 'neutral' | 'destructive'
   index?: number
 }
 
@@ -34,6 +34,7 @@ const tones = {
   primary: 'from-primary-600 to-primary-500 text-white',
   brass: 'from-brass-500 to-brass-400 text-primary-900',
   neutral: 'from-ink/90 to-ink/70 text-white',
+  destructive: 'from-red-500 to-red-400 text-white',
 }
 
 export function StatsCard({ label, value, prefix = '', suffix = '', icon: Icon, tone = 'primary', index = 0 }: StatsCardProps) {
