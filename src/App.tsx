@@ -7,6 +7,7 @@ import { JanabLayout } from '@/pages/janab/JanabLayout'
 import { JanabOverview } from '@/pages/janab/JanabOverview'
 import { JanabStudents } from '@/pages/janab/JanabStudents'
 import { JanabStudentProfile } from '@/pages/janab/JanabStudentProfile'
+import { JanabFees } from '@/pages/janab/JanabFees'
 import { AccountsLayout } from '@/pages/accounts/AccountsLayout'
 import { AccountsOverview } from '@/pages/accounts/AccountsOverview'
 import { ProtectedRoute } from '@/routes/ProtectedRoute'
@@ -28,6 +29,7 @@ function App() {
             <Route index element={<JanabOverview />} />
             <Route path="students" element={<JanabStudents />} />
             <Route path="students/:id" element={<JanabStudentProfile />} />
+            <Route path="fees" element={<JanabFees />} />
           </Route>
         </Route>
 

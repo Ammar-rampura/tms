@@ -167,12 +167,12 @@ export function Login() {
 
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             <div>
-              <Label>{panel === 'student-login' ? 'Student ID' : 'Username'}</Label>
+              <Label>{panel === 'student-login' ? 'Student ID / ITS Number' : 'Username'}</Label>
               <Input
                 autoFocus
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder={panel === 'student-login' ? 'e.g. STD0001' : 'Enter username'}
+                placeholder={panel === 'student-login' ? 'Enter Student ID or ITS Number' : 'Enter username'}
                 required
               />
             </div>

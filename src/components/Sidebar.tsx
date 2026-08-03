@@ -26,6 +26,7 @@ interface NavItem {
 export const janabItems: NavItem[] = [
   { to: '/janab', label: 'Overview', icon: LayoutDashboard },
   { to: '/janab/students', label: 'Students', icon: Users },
+  { to: '/janab/fees', label: 'Fees', icon: Wallet },
   { to: '/janab/attendance', label: 'Attendance', icon: CalendarCheck, disabled: true },
   { to: '/janab/performance', label: 'Performance', icon: LineChart, disabled: true },
 ]

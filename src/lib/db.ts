@@ -1,4 +1,4 @@
-import type { PaymentRecord, RegistrationInput, Student } from '@/types'
+import type { PaymentRecord, RegistrationInput, Student, FeeRecord, PaymentResult, PaymentResultRecord } from '@/types'
 import { supabase } from '@/lib/supabase'
 import bcrypt from 'bcryptjs'
 
@@ -134,8 +134,13 @@ function initRealtime() {
   if (isSubscribed || typeof window === 'undefined') return
   isSubscribed = true
 
+  const channelName = 'students-changes'
+  if (supabase.getChannels().some(c => c.topic === `realtime:${channelName}`)) {
+    return
+  }
+
   supabase
-    .channel('students-changes')
+    .channel(channelName)
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'students' },
@@ -472,7 +477,7 @@ export const db = {
         program: input.program,
         completedJuz: input.completedJuz,
         remarks: input.remarks || '',
-        monthlyFee: 0,
+        monthlyFee: MONTHLY_FEE,
         paidAmount: 0,
         dueAmount: 0,
         feeStatus: 'Paid',
@@ -490,6 +495,73 @@ export const db = {
         .single()
 
       if (insertError) handleDbError(insertError, 'registering student')
+
+      const now = new Date()
+
+      // Determine active billing month/year using app_settings table
+      let activeMonth = now.getMonth() + 1
+      let activeYear = now.getFullYear()
+
+      const { data: settings } = await supabase
+        .from('app_settings')
+        .select('active_billing_month, active_billing_year')
+        .eq('id', 1)
+        .maybeSingle()
+
+      if (settings) {
+        activeMonth = settings.active_billing_month
+        activeYear = settings.active_billing_year
+      } else {
+        // Fallback: create the initial row automatically
+        await supabase
+          .from('app_settings')
+          .insert({ id: 1, active_billing_month: activeMonth, active_billing_year: activeYear })
+      }
+
+      // Ensure no duplicate fee record is created
+      const { data: existingFee } = await supabase
+        .from('fee_records')
+        .select('id')
+        .eq('student_id', data.id)
+        .eq('billing_month', activeMonth)
+        .eq('billing_year', activeYear)
+        .maybeSingle()
+
+      if (!existingFee) {
+        let nextMonth = activeMonth
+        let nextMonthYear = activeYear
+        if (nextMonth > 11) {
+          nextMonth = 0
+          nextMonthYear++
+        }
+        const dueDate = new Date(nextMonthYear, nextMonth, 1)
+
+        const feeRecord = {
+          student_id: data.id,
+          billing_month: activeMonth,
+          billing_year: activeYear,
+          billing_date: now.toISOString().split('T')[0],
+          due_date: dueDate.toISOString().split('T')[0],
+          original_fee: studentData.monthlyFee,
+          scholarship_amount: 0,
+          amount: studentData.monthlyFee,
+          paid_amount: 0,
+          status: 'Pending',
+          payment_date: null,
+          payment_method: null,
+          receipt_number: null,
+          remarks: null
+        }
+
+        const { error: feeError } = await supabase
+          .from('fee_records')
+          .insert(feeRecord)
+
+        if (feeError) {
+          await supabase.from('students').delete().eq('id', data.id)
+          handleDbError(feeError, 'creating initial fee record')
+        }
+      }
 
       const returnedStudent = databaseToStudent(data as DatabaseStudent)
       returnedStudent.password = rawPassword
@@ -621,6 +693,331 @@ export const db = {
     } catch (err) {
       if (err instanceof Error) throw err
       handleDbError(err, 'recording payment')
+    }
+  },
+
+  async generateMonthlyFees(month?: number, year?: number): Promise<number> {
+    try {
+      const now = new Date()
+      const currentMonth = month || now.getMonth() + 1
+      const currentYear = year || now.getFullYear()
+      
+      // Store the active billing month globally in Supabase app_settings
+      const { error: settingsError } = await supabase
+        .from('app_settings')
+        .upsert({ 
+          id: 1, 
+          active_billing_month: currentMonth, 
+          active_billing_year: currentYear, 
+          updated_at: new Date().toISOString() 
+        })
+      
+      if (settingsError) {
+        handleDbError(settingsError, 'updating active billing month settings')
+      }
+
+      let nextMonth = currentMonth
+      let nextMonthYear = currentYear
+      if (nextMonth > 11) {
+        nextMonth = 0
+        nextMonthYear++
+      }
+      const dueDate = new Date(nextMonthYear, nextMonth, 1)
+
+      const { data: activeStudents, error: studentsError } = await supabase
+        .from('students')
+        .select('*')
+        .eq('status', 'active')
+
+      if (studentsError) handleDbError(studentsError, 'fetching active students')
+      if (!activeStudents || activeStudents.length === 0) return 0
+
+      const { data: existingRecords, error: fetchError } = await supabase
+        .from('fee_records')
+        .select('student_id')
+        .eq('billing_month', currentMonth)
+        .eq('billing_year', currentYear)
+
+      if (fetchError) handleDbError(fetchError, 'fetching existing fee records')
+
+      const existingStudentIds = new Set((existingRecords || []).map(r => r.student_id))
+      const recordsToInsert = []
+
+      for (const student of activeStudents) {
+        if (existingStudentIds.has(student.id)) continue
+
+        recordsToInsert.push({
+          student_id: student.id,
+          billing_month: currentMonth,
+          billing_year: currentYear,
+          billing_date: now.toISOString().split('T')[0],
+          due_date: dueDate.toISOString().split('T')[0],
+          original_fee: student.monthly_fee,
+          scholarship_amount: 0,
+          amount: student.monthly_fee,
+          paid_amount: 0,
+          status: 'Pending',
+          payment_date: null,
+          payment_method: null,
+          receipt_number: null,
+          remarks: null
+        })
+      }
+
+      if (recordsToInsert.length > 0) {
+        const { error: insertError } = await supabase
+          .from('fee_records')
+          .insert(recordsToInsert)
+        
+        if (insertError) handleDbError(insertError, 'generating monthly fees')
+      }
+
+      return recordsToInsert.length
+    } catch (err) {
+      if (err instanceof Error) throw err
+      handleDbError(err, 'generating monthly fees')
+      return 0
+    }
+  },
+
+  async getAccountsDataByMonth(month: number, year: number): Promise<FeeRecord[]> {
+    try {
+      const { data: currentRecords, error: currentError } = await supabase
+        .from('fee_records')
+        .select(`
+          *,
+          students (
+            id,
+            name,
+            its
+          )
+        `)
+        .eq('billing_month', month)
+        .eq('billing_year', year)
+
+      if (currentError) handleDbError(currentError, 'fetching current month fee records')
+
+      const { data: historicalRecords, error: historicalError } = await supabase
+        .from('fee_records')
+        .select(`
+          *,
+          students (
+            id,
+            name,
+            its
+          )
+        `)
+        .in('status', ['Pending', 'Partially Paid'])
+        .or(`billing_year.lt.${year},and(billing_year.eq.${year},billing_month.lt.${month})`)
+        .order('billing_year', { ascending: true })
+        .order('billing_month', { ascending: true })
+
+      if (historicalError) handleDbError(historicalError, 'fetching historical fee records')
+
+      const historicalByStudent: Record<string, any[]> = {}
+      if (historicalRecords) {
+        for (const hr of historicalRecords) {
+          if (!historicalByStudent[hr.student_id]) {
+            historicalByStudent[hr.student_id] = []
+          }
+          historicalByStudent[hr.student_id].push(hr)
+        }
+      }
+
+      const mapToFeeRecord = (r: any): FeeRecord => ({
+        id: r.id,
+        studentId: r.student_id,
+        studentName: (Array.isArray(r.students) ? r.students[0]?.name : r.students?.name) || '',
+        studentIts: (Array.isArray(r.students) ? r.students[0]?.its : r.students?.its) || '',
+        billingMonth: r.billing_month,
+        billingYear: r.billing_year,
+        billingDate: r.billing_date,
+        dueDate: r.due_date,
+        originalFee: r.original_fee || 0,
+        scholarshipAmount: r.scholarship_amount || 0,
+        amount: r.amount,
+        paidAmount: r.paid_amount,
+        status: r.status,
+        paymentDate: r.payment_date,
+        paymentMethod: r.payment_method,
+        receiptNumber: r.receipt_number,
+        remarks: r.remarks,
+        outstandingBalance: 0,
+        outstandingRecords: []
+      })
+
+      const result: FeeRecord[] = []
+      for (const cr of (currentRecords || [])) {
+        const feeRec = mapToFeeRecord(cr)
+        
+        const history = historicalByStudent[cr.student_id] || []
+        let outstandingBalance = 0
+        const outstandingRecords: FeeRecord[] = []
+
+        for (const hr of history) {
+          outstandingBalance += Math.max(0, hr.amount - hr.paid_amount)
+          outstandingRecords.push(mapToFeeRecord(hr))
+        }
+
+        feeRec.outstandingBalance = outstandingBalance
+        feeRec.outstandingRecords = outstandingRecords
+        result.push(feeRec)
+      }
+
+      return result
+    } catch (err) {
+      if (err instanceof Error) throw err
+      handleDbError(err, 'fetching accounts data')
+      return []
+    }
+  },
+
+  async processPayment(studentId: string, paymentAmount: number, paymentMethod: string): Promise<PaymentResult> {
+    try {
+      if (paymentAmount <= 0) throw new Error('Payment amount must be greater than 0')
+
+      const { data: unpaidRecords, error: fetchError } = await supabase
+        .from('fee_records')
+        .select('*')
+        .eq('student_id', studentId)
+        .in('status', ['Pending', 'Partially Paid'])
+        .order('billing_year', { ascending: true })
+        .order('billing_month', { ascending: true })
+
+      if (fetchError) handleDbError(fetchError, 'fetching unpaid fee records')
+      if (!unpaidRecords || unpaidRecords.length === 0) {
+        throw new Error('No outstanding fee records found for this student.')
+      }
+
+      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+      
+      let remainingAmount = paymentAmount
+      const updatedRecords: PaymentResultRecord[] = []
+      let recordsUpdated = 0
+      const nowStr = new Date().toISOString().split('T')[0]
+
+      for (const record of unpaidRecords) {
+        if (remainingAmount <= 0) break
+
+        const { data: latestRecord, error: latestError } = await supabase
+          .from('fee_records')
+          .select('paid_amount, amount, status')
+          .eq('id', record.id)
+          .single()
+
+        if (latestError) handleDbError(latestError, 'verifying fee record state')
+        if (!latestRecord || latestRecord.paid_amount !== record.paid_amount || latestRecord.status !== record.status) {
+          throw new Error('This fee record has already been updated. Please refresh and try again.')
+        }
+
+        const dueForRecord = Math.max(0, record.amount - record.paid_amount)
+        if (dueForRecord <= 0) continue
+
+        const amountToApply = Math.min(remainingAmount, dueForRecord)
+        const newPaidAmount = record.paid_amount + amountToApply
+        
+        if (newPaidAmount > record.amount) {
+          throw new Error('Paid amount cannot exceed total amount.')
+        }
+
+        const newStatus = newPaidAmount >= record.amount ? 'Paid' : 'Partially Paid'
+        
+        const { error: updateError } = await supabase
+          .from('fee_records')
+          .update({
+            paid_amount: newPaidAmount,
+            status: newStatus,
+            payment_date: nowStr,
+            payment_method: paymentMethod
+          })
+          .eq('id', record.id)
+
+        if (updateError) {
+          throw new Error(`Failed to update fee record for ${monthNames[record.billing_month - 1]} ${record.billing_year}. Process halted.`)
+        }
+
+        remainingAmount -= amountToApply
+        recordsUpdated++
+
+        updatedRecords.push({
+          billingMonth: record.billing_month,
+          billingYear: record.billing_year,
+          monthLabel: `${monthNames[record.billing_month - 1]} ${record.billing_year}`,
+          amountApplied: amountToApply,
+          remainingDue: Math.max(0, record.amount - newPaidAmount),
+          status: newStatus
+        })
+      }
+
+      return {
+        success: true,
+        paymentApplied: paymentAmount - remainingAmount,
+        recordsUpdated,
+        remainingAmount,
+        updatedRecords
+      }
+    } catch (err) {
+      if (err instanceof Error) throw err
+      handleDbError(err, 'processing payment')
+      throw err 
+    }
+  },
+
+  async updateMonthlyFeeDetails(
+    recordId: string, 
+    originalFee: number, 
+    scholarshipAmount: number, 
+    isSkipped: boolean
+  ): Promise<void> {
+    try {
+      if (scholarshipAmount < 0 || scholarshipAmount > originalFee) {
+        throw new Error('Scholarship amount must be between 0 and original fee')
+      }
+
+      const { data: record, error: fetchError } = await supabase
+        .from('fee_records')
+        .select('paid_amount')
+        .eq('id', recordId)
+        .single()
+      
+      if (fetchError || !record) handleDbError(fetchError || new Error('Record not found'), 'fetching record')
+
+      let newScholarship = scholarshipAmount
+      let newAmount = originalFee - newScholarship
+      let newStatus = 'Pending'
+
+      if (isSkipped) {
+        newScholarship = originalFee
+        newAmount = 0
+        newStatus = 'Skipped'
+      } else {
+        if (newAmount < record.paid_amount) {
+          throw new Error('Cannot reduce payable amount below already paid amount')
+        }
+        
+        if (newAmount === 0) {
+          newStatus = record.paid_amount > 0 ? 'Paid' : 'Pending'
+          if (newAmount === record.paid_amount) newStatus = 'Paid'
+        } else {
+          newStatus = record.paid_amount >= newAmount ? 'Paid' : record.paid_amount > 0 ? 'Partially Paid' : 'Pending'
+        }
+      }
+
+      const { error: updateError } = await supabase
+        .from('fee_records')
+        .update({
+          original_fee: originalFee,
+          scholarship_amount: newScholarship,
+          amount: newAmount,
+          status: newStatus
+        })
+        .eq('id', recordId)
+
+      if (updateError) handleDbError(updateError, 'updating fee record')
+    } catch (err) {
+      if (err instanceof Error) throw err
+      handleDbError(err, 'updating fee record')
+      throw err
     }
   },
 }

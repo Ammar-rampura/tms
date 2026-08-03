@@ -61,3 +61,67 @@ export interface RegistrationInput {
   completedJuz: number[]
   remarks?: string
 }
+
+export interface DatabaseFeeRecord {
+  id: string
+  student_id: string
+  billing_month: number
+  billing_year: number
+  billing_date: string
+  due_date: string
+  original_fee: number
+  scholarship_amount: number
+  amount: number
+  paid_amount: number
+  status: 'Pending' | 'Partially Paid' | 'Paid' | 'Skipped'
+  payment_date: string | null
+  payment_method: string | null
+  receipt_number: string | null
+  remarks: string | null
+  created_at: string
+  updated_at: string
+  students?: {
+    id: string
+    name: string
+    its: string
+  }
+}
+
+export interface FeeRecord {
+  id: string
+  studentId: string
+  studentName: string
+  studentIts: string
+  billingMonth: number
+  billingYear: number
+  billingDate: string
+  dueDate: string
+  originalFee: number
+  scholarshipAmount: number
+  amount: number
+  paidAmount: number
+  status: 'Pending' | 'Partially Paid' | 'Paid' | 'Skipped'
+  paymentDate: string | null
+  paymentMethod: string | null
+  receiptNumber: string | null
+  remarks: string | null
+  outstandingBalance: number
+  outstandingRecords: FeeRecord[]
+}
+
+export interface PaymentResultRecord {
+  billingMonth: number
+  billingYear: number
+  monthLabel: string
+  amountApplied: number
+  remainingDue: number
+  status: 'Pending' | 'Partially Paid' | 'Paid'
+}
+
+export interface PaymentResult {
+  success: boolean
+  paymentApplied: number
+  recordsUpdated: number
+  remainingAmount: number
+  updatedRecords: PaymentResultRecord[]
+}
