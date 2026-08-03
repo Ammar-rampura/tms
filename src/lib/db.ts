@@ -640,6 +640,14 @@ export const db = {
 
   async deleteStudent(id: string): Promise<void> {
     try {
+      // Delete all related fee records first to avoid foreign key constraint errors
+      const { error: feeError } = await supabase
+        .from('fee_records')
+        .delete()
+        .eq('student_id', id)
+
+      if (feeError) handleDbError(feeError, 'deleting student fee records')
+
       const { error } = await supabase
         .from('students')
         .delete()
