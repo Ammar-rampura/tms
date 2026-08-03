@@ -23,7 +23,7 @@ interface DatabaseStudent {
   mother_mobile: string
   email: string
   address: string
-  program: 'Tahfeez' | 'Taiseer'
+  program: 'Tahfeez' | 'Taiseer' | 'Atfaal'
   completed_juz: number[]
   remarks: string
   monthly_fee: number

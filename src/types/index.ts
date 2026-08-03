@@ -1,4 +1,4 @@
-export type Program = 'Tahfeez' | 'Taiseer'
+export type Program = 'Tahfeez' | 'Taiseer' | 'Atfaal'
 
 export type FeeStatus = 'Paid' | 'Partial' | 'Due' | 'Skipped'
 

@@ -28,7 +28,7 @@ const schema = z.object({
   motherMobile: z.string().regex(/^\d{10}$/, 'Enter a valid 10-digit mobile number'),
   email: z.string().email('Enter a valid email address'),
   address: z.string().min(5, 'Address is required'),
-  program: z.enum(['Tahfeez', 'Taiseer']),
+  program: z.enum(['Tahfeez', 'Taiseer', 'Atfaal']),
   completedJuz: z.array(z.number()),
   remarks: z.string().optional(),
 })
@@ -169,6 +169,7 @@ export function StudentRegister() {
                       <SelectContent>
                         <SelectItem value="Tahfeez">Tahfeez</SelectItem>
                         <SelectItem value="Taiseer">Taiseer</SelectItem>
+                        <SelectItem value="Atfaal">Atfaal</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

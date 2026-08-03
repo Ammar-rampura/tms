@@ -334,6 +334,7 @@ export function JanabStudents() {
                 >
                   <option value="Tahfeez">Tahfeez</option>
                   <option value="Taiseer">Taiseer</option>
+                  <option value="Atfaal">Atfaal</option>
                 </select>
               </div>
               <div>
