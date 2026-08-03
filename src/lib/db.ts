@@ -710,18 +710,44 @@ export const db = {
       const currentMonth = month || now.getMonth() + 1
       const currentYear = year || now.getFullYear()
       
-      // Store the active billing month globally in Supabase app_settings
-      const { error: settingsError } = await supabase
+      // Check if the setting exists
+      const { data: existingSettings, error: fetchSettingsError } = await supabase
         .from('app_settings')
-        .upsert({ 
-          id: 1, 
-          active_billing_month: currentMonth, 
-          active_billing_year: currentYear, 
-          updated_at: new Date().toISOString() 
-        })
-      
-      if (settingsError) {
-        handleDbError(settingsError, 'updating active billing month settings')
+        .select('id')
+        .eq('id', 1)
+        .maybeSingle()
+
+      if (fetchSettingsError) {
+        handleDbError(fetchSettingsError, 'fetching active billing month settings')
+      }
+
+      if (existingSettings) {
+        // Update the existing row
+        const { error: settingsError } = await supabase
+          .from('app_settings')
+          .update({ 
+            active_billing_month: currentMonth, 
+            active_billing_year: currentYear, 
+            updated_at: new Date().toISOString() 
+          })
+          .eq('id', 1)
+        
+        if (settingsError) {
+          handleDbError(settingsError, 'updating active billing month settings')
+        }
+      } else {
+        // Fallback: create the initial row
+        const { error: settingsError } = await supabase
+          .from('app_settings')
+          .insert({ 
+            id: 1, 
+            active_billing_month: currentMonth, 
+            active_billing_year: currentYear 
+          })
+        
+        if (settingsError) {
+          handleDbError(settingsError, 'inserting active billing month settings')
+        }
       }
 
       let nextMonth = currentMonth
