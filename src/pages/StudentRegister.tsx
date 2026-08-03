@@ -106,8 +106,9 @@ export function StudentRegister() {
       const student = await registerStudent(values)
       setCreatedStudent(student)
       toast.success('Student registered successfully')
-    } catch {
-      toast.error('Something went wrong. Please try again.')
+    } catch (err) {
+      console.error('Registration error:', err)
+      toast.error(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
     } finally {
       setSubmitting(false)
     }
