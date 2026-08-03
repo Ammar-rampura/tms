@@ -506,24 +506,20 @@ export const db = {
         .from('app_settings')
         .select('active_billing_month, active_billing_year')
         .eq('id', 1)
-        .maybeSingle()
+        .single() // Force single to throw PGRST116 if 0 rows are returned (due to RLS or missing row)
 
       if (fetchSettingsError) {
-        console.error(fetchSettingsError)
-        handleDbError(fetchSettingsError, 'fetching active billing month settings')
+        console.log({
+          action: 'register_fetch_failed',
+          selectError: fetchSettingsError
+        })
+        throw new Error(`DB Error [${fetchSettingsError.code}]: ${fetchSettingsError.message}`)
       }
 
       if (settings) {
         activeMonth = settings.active_billing_month
         activeYear = settings.active_billing_year
       } else {
-        const { data: auth } = await supabase.auth.getUser();
-        console.log({
-          action: 'register',
-          selectResult: settings,
-          selectError: fetchSettingsError,
-          authenticatedUser: auth,
-        })
         throw new Error('ERP configuration missing')
       }
 
