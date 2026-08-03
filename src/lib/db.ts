@@ -713,7 +713,7 @@ export const db = {
       const currentYear = year || now.getFullYear()
       
       // Update the existing row directly
-      const { data: updateData, error: updateSettingsError } = await supabase
+      const result = await supabase
         .from('app_settings')
         .update({ 
           active_billing_month: currentMonth, 
@@ -722,13 +722,22 @@ export const db = {
         })
         .eq('id', 1)
         .select()
+        
+      console.log('Update result data:', result.data)
+      console.log('Update result error:', result.error)
+      console.log('Update result status:', result.status)
+      console.log('Update result statusText:', result.statusText)
+      console.log('Update result count:', result.count)
       
-      if (updateSettingsError) {
-        console.error(updateSettingsError)
-        handleDbError(updateSettingsError, 'updating active billing month settings')
+      const { data: auth } = await supabase.auth.getUser();
+      console.log('Authenticated user:', auth);
+      
+      if (result.error) {
+        console.error(result.error)
+        handleDbError(result.error, 'updating active billing month settings')
       }
       
-      if (!updateData || updateData.length === 0) {
+      if (!result.data || result.data.length === 0) {
         throw new Error('ERP configuration missing')
       }
 
