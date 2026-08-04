@@ -30,6 +30,7 @@ export function AccountsOverview() {
   const [active, setActive] = useState<FeeRecord | null>(null)
   const [amount, setAmount] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('Cash')
+  const [remark, setRemark] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [generating, setGenerating] = useState(false)
 
@@ -53,7 +54,7 @@ export function AccountsOverview() {
     const q = query.trim().toLowerCase()
     if (!q) return records
     return records.filter(
-      (r) => r.studentName.toLowerCase().includes(q) || r.studentId.toLowerCase().includes(q) || r.studentIts.includes(q)
+      (r) => r.studentName.toLowerCase().includes(q) || r.studentId.toLowerCase().includes(q) || r.studentIts.includes(q) || (r.remark && r.remark.toLowerCase().includes(q))
     )
   }, [records, query])
 
@@ -99,7 +100,7 @@ export function AccountsOverview() {
 
     setSubmitting(true)
     try {
-      const result: PaymentResult = await db.processPayment(active.studentId, value, paymentMethod)
+      const result: PaymentResult = await db.processPayment(active.studentId, value, paymentMethod, remark.trim() || undefined)
       
       let summary = `Payment Successful!\n₹${result.paymentApplied} received.\n\nApplied to:\n`
       result.updatedRecords.forEach(ur => {
@@ -110,6 +111,7 @@ export function AccountsOverview() {
       toast.success(summary, { duration: 8000 })
       setActive(null)
       setAmount('')
+      setRemark('')
       
       await loadData(selectedMonth, selectedYear)
     } catch (err) {
@@ -132,7 +134,8 @@ export function AccountsOverview() {
       'Due': Math.max(0, r.amount - r.paidAmount),
       'Outstanding Balance': r.outstandingBalance,
       'Total Payable': Math.max(0, r.amount - r.paidAmount) + r.outstandingBalance,
-      'Status': r.status
+      'Status': r.status,
+      'Remark': r.remark || '-'
     }))
     exportToCsv(`accounts_fees_${MONTHS[selectedMonth-1]}_${selectedYear}.csv`, data)
   }
@@ -228,6 +231,7 @@ export function AccountsOverview() {
                 <th className="px-4 py-3 font-semibold">Paid</th>
                 <th className="px-4 py-3 font-semibold">Due</th>
                 <th className="px-4 py-3 font-semibold">Status</th>
+                <th className="px-4 py-3 font-semibold">Remark</th>
                 <th className="px-4 py-3 text-right font-semibold">Action</th>
               </tr>
             </thead>
@@ -261,6 +265,9 @@ export function AccountsOverview() {
                       record.status === 'Paid' ? 'Paid' : 'Due'
                     } />
                   </td>
+                  <td className="px-4 py-3 text-ink/70 dark:text-primary-100/70 max-w-[150px] truncate" title={record.remark || ''}>
+                    {record.remark || '-'}
+                  </td>
                   <td className="px-4 py-3 text-right">
                     <Button
                       size="sm"
@@ -279,7 +286,10 @@ export function AccountsOverview() {
       )}
 
       <Dialog open={!!active} onOpenChange={(open) => {
-        if (!submitting && !open) setActive(null)
+        if (!submitting && !open) {
+          setActive(null)
+          setRemark('')
+        }
       }}>
         <DialogContent>
           <DialogTitle>Receive Payment</DialogTitle>
@@ -344,6 +354,19 @@ export function AccountsOverview() {
                   onChange={(e) => setAmount(e.target.value)}
                   placeholder={`Up to ${Math.max(0, active.amount - active.paidAmount) + active.outstandingBalance}`}
                   max={Math.max(0, active.amount - active.paidAmount) + active.outstandingBalance}
+                  disabled={submitting}
+                />
+              </div>
+
+              <div>
+                <Label>Remark</Label>
+                <textarea
+                  className="w-full mt-1.5 rounded-xl border border-primary-900/12 dark:border-primary-100/12 bg-white/70 dark:bg-primary-900/40 p-3.5 text-sm resize-none"
+                  value={remark}
+                  onChange={e => setRemark(e.target.value)}
+                  placeholder="Enter payment remark (optional)..."
+                  maxLength={500}
+                  rows={2}
                   disabled={submitting}
                 />
               </div>

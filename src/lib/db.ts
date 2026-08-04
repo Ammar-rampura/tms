@@ -887,6 +887,7 @@ export const db = {
         paymentMethod: r.payment_method,
         receiptNumber: r.receipt_number,
         remarks: r.remarks,
+        remark: r.remark,
         outstandingBalance: 0,
         outstandingRecords: []
       })
@@ -917,7 +918,7 @@ export const db = {
     }
   },
 
-  async processPayment(studentId: string, paymentAmount: number, paymentMethod: string): Promise<PaymentResult> {
+  async processPayment(studentId: string, paymentAmount: number, paymentMethod: string, remark?: string): Promise<PaymentResult> {
     try {
       if (paymentAmount <= 0) throw new Error('Payment amount must be greater than 0')
 
@@ -967,14 +968,20 @@ export const db = {
 
         const newStatus = newPaidAmount >= record.amount ? 'Paid' : 'Partially Paid'
         
+        const updatePayload: any = {
+          paid_amount: newPaidAmount,
+          status: newStatus,
+          payment_date: nowStr,
+          payment_method: paymentMethod
+        }
+        
+        if (remark !== undefined) {
+          updatePayload.remark = remark || null
+        }
+
         const { error: updateError } = await supabase
           .from('fee_records')
-          .update({
-            paid_amount: newPaidAmount,
-            status: newStatus,
-            payment_date: nowStr,
-            payment_method: paymentMethod
-          })
+          .update(updatePayload)
           .eq('id', record.id)
 
         if (updateError) {

@@ -78,6 +78,7 @@ export interface DatabaseFeeRecord {
   payment_method: string | null
   receipt_number: string | null
   remarks: string | null
+  remark: string | null
   created_at: string
   updated_at: string
   students?: {
@@ -105,6 +106,7 @@ export interface FeeRecord {
   paymentMethod: string | null
   receiptNumber: string | null
   remarks: string | null
+  remark: string | null
   outstandingBalance: number
   outstandingRecords: FeeRecord[]
 }
