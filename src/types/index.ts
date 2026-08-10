@@ -15,6 +15,7 @@ export interface Student {
   name: string
   age: number
   its: string
+  itsPassword?: string
   mobile: string
   fatherName: string
   fatherIts: string
@@ -48,6 +49,7 @@ export interface RegistrationInput {
   name: string
   age: number
   its: string
+  itsPassword?: string
   mobile: string
   fatherName: string
   fatherIts: string

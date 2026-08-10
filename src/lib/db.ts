@@ -14,6 +14,7 @@ interface DatabaseStudent {
   name: string
   age: number
   its: string
+  its_password?: string | null
   mobile: string
   father_name: string
   father_its: string
@@ -77,6 +78,7 @@ function databaseToStudent(row: DatabaseStudent): Student {
     name: row.name,
     age: row.age,
     its: row.its,
+    itsPassword: row.its_password || undefined,
     mobile: row.mobile,
     fatherName: row.father_name,
     fatherIts: row.father_its,
@@ -106,6 +108,7 @@ function studentToDatabase(student: Student): DatabaseStudent {
     name: student.name,
     age: student.age,
     its: student.its,
+    its_password: student.itsPassword || null,
     mobile: student.mobile,
     father_name: student.fatherName,
     father_its: student.fatherIts,
@@ -467,6 +470,7 @@ export const db = {
         name: input.name,
         age: input.age,
         its: input.its,
+        itsPassword: input.itsPassword,
         mobile: input.mobile,
         fatherName: input.fatherName,
         fatherIts: input.fatherIts,
@@ -623,6 +627,7 @@ export const db = {
       if (patch.name !== undefined && patch.name !== student.name) updateData.name = patch.name
       if (patch.age !== undefined && patch.age !== student.age) updateData.age = patch.age
       if (patch.its !== undefined && patch.its !== student.its) updateData.its = patch.its
+      if (patch.itsPassword !== undefined && patch.itsPassword !== student.itsPassword) updateData.its_password = patch.itsPassword
       if (patch.mobile !== undefined && patch.mobile !== student.mobile) updateData.mobile = patch.mobile
       if (patch.fatherName !== undefined && patch.fatherName !== student.fatherName) updateData.father_name = patch.fatherName
       if (patch.fatherIts !== undefined && patch.fatherIts !== student.fatherIts) updateData.father_its = patch.fatherIts
@@ -915,6 +920,41 @@ export const db = {
       if (err instanceof Error) throw err
       handleDbError(err, 'fetching accounts data')
       return []
+    }
+  },
+
+  async getCollectionStats(month: number, year: number): Promise<{ today: number, monthly: number, total: number }> {
+    try {
+      const { data, error } = await supabase.from('fee_records').select('paid_amount, payment_date')
+      if (error) {
+        handleDbError(error, 'fetching collection stats')
+        return { today: 0, monthly: 0, total: 0 }
+      }
+      
+      let today = 0
+      let monthly = 0
+      let total = 0
+      
+      const todayStr = new Date().toISOString().split('T')[0]
+      const selectedMonthStr = `${year}-${String(month).padStart(2, '0')}`
+
+      for (const row of data || []) {
+        if (!row.paid_amount) continue
+        total += row.paid_amount
+        
+        if (row.payment_date === todayStr) {
+          today += row.paid_amount
+        }
+        
+        if (row.payment_date && row.payment_date.startsWith(selectedMonthStr)) {
+          monthly += row.paid_amount
+        }
+      }
+      
+      return { today, monthly, total }
+    } catch (err) {
+      console.error('Error fetching collection stats:', err)
+      return { today: 0, monthly: 0, total: 0 }
     }
   },
 

@@ -13,6 +13,7 @@ import { formatCurrency } from '@/lib/utils'
 import type { FeeRecord } from '@/types'
 import { toast } from 'sonner'
 import { db } from '@/lib/db'
+import { useData } from '@/context/DataContext'
 
 const MONTHS = [
   "January", "February", "March", "April", "May", "June", 
@@ -20,9 +21,11 @@ const MONTHS = [
 ]
 
 export function JanabFees() {
+  const { students } = useData()
   const [query, setQuery] = useState('')
   const [records, setRecords] = useState<FeeRecord[]>([])
   const [loading, setLoading] = useState(true)
+  const [collectionStats, setCollectionStats] = useState({ today: 0, monthly: 0, total: 0 })
   
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
@@ -41,6 +44,9 @@ export function JanabFees() {
     try {
       const data = await db.getAccountsDataByMonth(month, year)
       setRecords(data)
+      
+      const statsData = await db.getCollectionStats(month, year)
+      setCollectionStats(statsData)
     } catch (err) {
       toast.error('Failed to load fee data')
     } finally {
@@ -61,25 +67,20 @@ export function JanabFees() {
   }, [records, query])
 
   const stats = useMemo(() => {
-    let totalOriginal = 0
-    let totalScholarship = 0
-    let totalPayable = 0
-    
+    const totalStudents = students.filter(s => s.status === 'active').length
+
+    let monthlyCollection = 0
     for (const r of records) {
-      if (r.status !== 'Skipped') {
-        totalOriginal += r.originalFee
-        totalScholarship += r.scholarshipAmount
-        totalPayable += r.amount
-      }
+      monthlyCollection += r.paidAmount
     }
 
     return { 
-      totalOriginal, 
-      totalScholarship, 
-      totalPayable,
-      totalStudents: records.length
+      totalStudents, 
+      todayCollection: collectionStats.today, 
+      monthlyCollection,
+      totalCollection: collectionStats.total || monthlyCollection // fallback if total is 0
     }
-  }, [records])
+  }, [students, collectionStats, records])
 
   const openEditDialog = (record: FeeRecord) => {
     setActive(record)
@@ -175,10 +176,10 @@ export function JanabFees() {
       </div>
 
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        <StatsCard label="Total Original Fees" value={stats.totalOriginal} prefix="₹" icon={Wallet} tone="neutral" index={0} />
-        <StatsCard label="Total Scholarships" value={stats.totalScholarship} prefix="₹" icon={IndianRupee} tone="destructive" index={1} />
-        <StatsCard label="Total Payable Expected" value={stats.totalPayable} prefix="₹" icon={Wallet} tone="brass" index={2} />
-        <StatsCard label="Number of Students" value={stats.totalStudents} icon={Users} tone="primary" index={3} />
+        <StatsCard label="Total Student" value={stats.totalStudents} icon={Users} tone="primary" index={0} />
+        <StatsCard label="Today Collection" value={stats.todayCollection} prefix="₹" icon={IndianRupee} tone="neutral" index={1} />
+        <StatsCard label="Monthly Collection" value={stats.monthlyCollection} prefix="₹" icon={Wallet} tone="brass" index={2} />
+        <StatsCard label="Total Collection" value={stats.totalCollection} prefix="₹" icon={Wallet} tone="primary" index={3} />
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

@@ -19,6 +19,7 @@ const schema = z.object({
   name: z.string().min(2, 'Full name is required'),
   age: z.coerce.number(),
   its: z.string().regex(/^\d{8}$/, 'ITS number must be exactly 8 digits'),
+  itsPassword: z.string().optional(),
   mobile: z.string().regex(/^\d{10}$/, 'Enter a valid 10-digit mobile number'),
   fatherName: z.string().min(2, "Father's name is required"),
   fatherIts: z.string().regex(/^\d{8}$/, "Father's ITS must be exactly 8 digits"),
@@ -41,7 +42,7 @@ const steps = [
 ]
 
 const stepFields: (keyof FormValues)[][] = [
-  ['name', 'age', 'its', 'mobile', 'fatherName', 'fatherIts', 'motherName', 'motherIts', 'fatherMobile', 'motherMobile', 'email', 'address', 'program'],
+  ['name', 'age', 'its', 'itsPassword', 'mobile', 'fatherName', 'fatherIts', 'motherName', 'motherIts', 'fatherMobile', 'motherMobile', 'email', 'address', 'program'],
   ['completedJuz', 'remarks'],
 ]
 
@@ -182,6 +183,11 @@ export function StudentRegister() {
                     <Label>ITS Number</Label>
                     <Input placeholder="8-digit ITS number" {...register('its')} error={!!errors.its} />
                     <FieldError>{errors.its?.message}</FieldError>
+                  </div>
+                  <div>
+                    <Label>ITS Password</Label>
+                    <Input placeholder="Enter ITS Password" {...register('itsPassword')} error={!!errors.itsPassword} />
+                    <FieldError>{errors.itsPassword?.message}</FieldError>
                   </div>
                   <div>
                     <Label>Mobile Number</Label>

@@ -46,7 +46,7 @@ export function JanabStudents() {
     let list = students.filter((s) => {
       const q = query.trim().toLowerCase()
       const matchesQuery =
-        !q || s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q) || s.its.includes(q)
+        !q || s.name.toLowerCase().includes(q) || s.id.toLowerCase().includes(q) || s.its.includes(q) || (s.itsPassword && s.itsPassword.toLowerCase().includes(q))
       
       const mStatus = getMarhalaStatus(s.completedJuz || [])
       const matchesMarhala = marhalaFilter === 'all' || mStatus.type === marhalaFilter
@@ -93,6 +93,7 @@ export function JanabStudents() {
       ID: s.id,
       Name: s.name,
       ITS: s.its,
+      'ITS Password': s.itsPassword || '-',
       Age: s.age,
       Program: s.program,
       'Marhala Status': getMarhalaStatus(s.completedJuz || []).text,
@@ -181,93 +182,6 @@ export function JanabStudents() {
         </div>
       </div>
 
-      {loading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="card-surface flex flex-col items-center justify-center gap-2 p-16 text-center">
-          <Users className="h-9 w-9 text-ink/25" />
-          <p className="font-medium text-ink/60 dark:text-primary-100/60">No students match your search</p>
-          <p className="text-sm text-ink/40 dark:text-primary-100/40">Try adjusting filters or search terms.</p>
-        </div>
-      ) : (
-        <div className="card-surface overflow-x-auto">
-          <table className="w-full min-w-[800px] text-sm">
-            <thead>
-              <tr className="border-b border-primary-900/10 text-left text-xs uppercase tracking-wide text-ink/45 dark:border-primary-100/10 dark:text-primary-100/45">
-                <th className="px-4 py-3 font-semibold">Student</th>
-                <th className="px-4 py-3 font-semibold">ITS</th>
-                <th className="px-4 py-3 font-semibold">Age</th>
-                <th className="px-4 py-3 font-semibold">Hifz</th>
-                <th className="px-4 py-3 font-semibold">Fee</th>
-                <th className="px-4 py-3 font-semibold">Paid / Due</th>
-                <th className="px-4 py-3 font-semibold">Registered</th>
-                <th className="px-4 py-3 text-right font-semibold">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paged.map((student, i) => (
-                <motion.tr
-                  key={student.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.03 }}
-                  className="border-b border-primary-900/[0.05] last:border-0 hover:bg-primary-900/[0.02] dark:border-primary-100/[0.06] dark:hover:bg-primary-100/[0.03]"
-                >
-                  <td className="px-4 py-3">
-                    <p className="font-semibold text-ink dark:text-primary-50 flex items-center gap-2">
-                      {student.name}
-                      {student.status === 'inactive' && (
-                        <span className="inline-flex items-center rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">
-                          Inactive
-                        </span>
-                      )}
-                    </p>
-                    <p className="font-mono text-xs text-ink/45 dark:text-primary-100/45">{student.id}</p>
-                  </td>
-                  <td className="px-4 py-3 font-mono text-ink/70 dark:text-primary-100/70">{student.its}</td>
-                  <td className="px-4 py-3 text-ink/70 dark:text-primary-100/70">{student.age}</td>
-                  <td className="px-4 py-3">
-                    {student.completedJuz && student.completedJuz.length > 0 ? (
-                      <div className="flex flex-col gap-1">
-                        {formatCompletedJuz(student.completedJuz).map((item, idx) => (
-                          <span key={idx} className="whitespace-nowrap text-xs text-ink/70 dark:text-primary-100/70">
-                            <span className="font-medium text-ink dark:text-primary-50">{item.marhala}</span> – {item.juzList}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <span className="text-xs text-ink/40 dark:text-primary-100/40">Not Started</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3"><FeeStatusBadge status={student.feeStatus} /></td>
-                  <td className="px-4 py-3 font-mono text-xs">
-                    <span className="text-primary-600 dark:text-primary-300">{formatCurrency(student.paidAmount)}</span>
-                    {' / '}
-                    <span className="text-red-500">{formatCurrency(student.dueAmount)}</span>
-                  </td>
-                  <td className="px-4 py-3 text-ink/55 dark:text-primary-100/55">{formatDate(student.createdDate)}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <Link to={`/janab/students/${student.id}`}>
-                        <Button variant="ghost" size="icon" title="View profile"><Eye className="h-4 w-4" /></Button>
-                      </Link>
-                      <Button variant="ghost" size="icon" title="Quick edit" onClick={() => setEditing(student)}>
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" title="Delete" onClick={() => setDeleting(student)}>
-                        <Trash2 className="h-4 w-4 text-red-500" />
-                      </Button>
-                    </div>
-                  </td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
       {filtered.length > 0 && (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4 text-sm text-ink/50 dark:text-primary-100/50">
@@ -295,6 +209,89 @@ export function JanabStudents() {
         </div>
       )}
 
+      {loading ? (
+        <div className="space-y-3">
+          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-14 w-full" />)}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="card-surface flex flex-col items-center justify-center gap-2 p-16 text-center">
+          <Users className="h-9 w-9 text-ink/25" />
+          <p className="font-medium text-ink/60 dark:text-primary-100/60">No students match your search</p>
+          <p className="text-sm text-ink/40 dark:text-primary-100/40">Try adjusting filters or search terms.</p>
+        </div>
+      ) : (
+        <div className="card-surface overflow-x-auto">
+          <table className="w-full min-w-[800px] text-sm">
+            <thead>
+              <tr className="border-b border-primary-900/10 text-left text-xs uppercase tracking-wide text-ink/45 dark:border-primary-100/10 dark:text-primary-100/45">
+                <th className="px-4 py-3 font-semibold">Student</th>
+                <th className="px-4 py-3 font-semibold">ITS</th>
+                <th className="px-4 py-3 font-semibold">ITS PWD</th>
+                <th className="px-4 py-3 font-semibold">Age</th>
+                <th className="px-4 py-3 font-semibold">Hifz</th>
+                <th className="px-4 py-3 font-semibold">Fee</th>
+                <th className="px-4 py-3 font-semibold">Registered</th>
+                <th className="px-4 py-3 text-right font-semibold">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {paged.map((student, i) => (
+                <motion.tr
+                  key={student.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: i * 0.03 }}
+                  className="border-b border-primary-900/[0.05] last:border-0 hover:bg-primary-900/[0.02] dark:border-primary-100/[0.06] dark:hover:bg-primary-100/[0.03]"
+                >
+                  <td className="px-4 py-3">
+                    <p className="font-semibold text-ink dark:text-primary-50 flex items-center gap-2">
+                      {student.name}
+                      {student.status === 'inactive' && (
+                        <span className="inline-flex items-center rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                          Inactive
+                        </span>
+                      )}
+                    </p>
+                    <p className="font-mono text-xs text-ink/45 dark:text-primary-100/45">{student.id}</p>
+                  </td>
+                  <td className="px-4 py-3 font-mono text-ink/70 dark:text-primary-100/70">{student.its}</td>
+                  <td className="px-4 py-3 font-mono text-ink/70 dark:text-primary-100/70">{student.itsPassword || '-'}</td>
+                  <td className="px-4 py-3 text-ink/70 dark:text-primary-100/70">{student.age}</td>
+                  <td className="px-4 py-3">
+                    {student.completedJuz && student.completedJuz.length > 0 ? (
+                      <div className="flex flex-col gap-1">
+                        {formatCompletedJuz(student.completedJuz).map((item, idx) => (
+                          <span key={idx} className="whitespace-nowrap text-xs text-ink/70 dark:text-primary-100/70">
+                            <span className="font-medium text-ink dark:text-primary-50">{item.marhala}</span> – {item.juzList}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-xs text-ink/40 dark:text-primary-100/40">Not Started</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3"><FeeStatusBadge status={student.feeStatus} /></td>
+                  <td className="px-4 py-3 text-ink/55 dark:text-primary-100/55">{formatDate(student.createdDate)}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <Link to={`/janab/students/${student.id}`}>
+                        <Button variant="ghost" size="icon" title="View profile"><Eye className="h-4 w-4" /></Button>
+                      </Link>
+                      <Button variant="ghost" size="icon" title="Quick edit" onClick={() => setEditing(student)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" title="Delete" onClick={() => setDeleting(student)}>
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                      </Button>
+                    </div>
+                  </td>
+                </motion.tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {/* Quick edit dialog */}
       <Dialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)}>
         <DialogContent>
@@ -309,6 +306,7 @@ export function JanabStudents() {
                 await updateStudent(editing.id, {
                   mobile: String(form.get('mobile')),
                   address: String(form.get('address')),
+                  itsPassword: String(form.get('itsPassword') || ''),
                   remarks: String(form.get('remarks') || ''),
                   program: form.get('program') as Program,
                   status: form.get('status') as 'active' | 'inactive',
@@ -317,6 +315,10 @@ export function JanabStudents() {
                 setEditing(null)
               }}
             >
+              <div>
+                <Label>ITS Password</Label>
+                <Input name="itsPassword" defaultValue={editing.itsPassword || ''} />
+              </div>
               <div>
                 <Label>Mobile Number</Label>
                 <Input name="mobile" defaultValue={editing.mobile} required />

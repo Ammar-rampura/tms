@@ -19,7 +19,7 @@ export function JanabStudentProfile() {
   const navigate = useNavigate()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [form, setForm] = useState({
-    name: '', age: 0, mobile: '', fatherName: '', fatherIts: '', motherName: '', motherIts: '', fatherMobile: '', motherMobile: '', email: '', address: '', program: 'Tahfeez' as Program, completedJuz: [] as number[], remarks: '', monthlyFee: 0, status: 'active' as 'active' | 'inactive',
+    name: '', age: 0, mobile: '', fatherName: '', fatherIts: '', motherName: '', motherIts: '', fatherMobile: '', motherMobile: '', email: '', address: '', program: 'Tahfeez' as Program, completedJuz: [] as number[], remarks: '', monthlyFee: 0, status: 'active' as 'active' | 'inactive', itsPassword: ''
   })
 
   const student = students.find((s) => s.id === id)
@@ -29,6 +29,7 @@ export function JanabStudentProfile() {
       setForm({
         name: student.name,
         age: student.age,
+        itsPassword: student.itsPassword || '',
         mobile: student.mobile,
         fatherName: student.fatherName,
         fatherIts: student.fatherIts,
@@ -99,6 +100,10 @@ export function JanabStudentProfile() {
             <Input type="number" value={form.age} onChange={(e) => setForm({ ...form, age: Number(e.target.value) })} />
           </div>
           <div>
+            <Label>ITS Password</Label>
+            <Input value={form.itsPassword} onChange={(e) => setForm({ ...form, itsPassword: e.target.value })} />
+          </div>
+          <div>
             <Label>Mobile Number</Label>
             <Input value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} />
           </div>
@@ -157,10 +162,7 @@ export function JanabStudentProfile() {
               <option value="inactive">Inactive</option>
             </select>
           </div>
-          <div>
-            <Label>Monthly Fee</Label>
-            <Input type="number" value={form.monthlyFee} onChange={(e) => setForm({ ...form, monthlyFee: Number(e.target.value) })} />
-          </div>
+
           <div className="sm:col-span-2">
             <Label>Quran Details</Label>
             <div className="mt-2 space-y-4 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
