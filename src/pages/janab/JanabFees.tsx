@@ -23,6 +23,7 @@ const MONTHS = [
 export function JanabFees() {
   const { students } = useData()
   const [query, setQuery] = useState('')
+  const [filterDate, setFilterDate] = useState('')
   const [records, setRecords] = useState<FeeRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [collectionStats, setCollectionStats] = useState({ today: 0, monthly: 0, total: 0 })
@@ -59,12 +60,24 @@ export function JanabFees() {
   }, [selectedMonth, selectedYear])
 
   const filtered = useMemo(() => {
+    let result = records
+    
+    if (filterDate) {
+      result = result.filter(r => r.paymentDate && r.paymentDate.startsWith(filterDate))
+    }
+
     const q = query.trim().toLowerCase()
-    if (!q) return records
-    return records.filter(
-      (r) => r.studentName.toLowerCase().includes(q) || r.studentId.toLowerCase().includes(q) || r.studentIts.includes(q)
+    if (!q) return result
+    return result.filter(
+      (r) => r.studentName.toLowerCase().includes(q) || 
+             r.studentId.toLowerCase().includes(q) || 
+             r.studentIts.includes(q) ||
+             r.originalFee.toString().includes(q) ||
+             r.amount.toString().includes(q) ||
+             r.paidAmount.toString().includes(q) ||
+             Math.max(0, r.amount - r.paidAmount).toString().includes(q)
     )
-  }, [records, query])
+  }, [records, query, filterDate])
 
   const stats = useMemo(() => {
     const totalStudents = students.filter(s => s.status === 'active').length
@@ -187,6 +200,18 @@ export function JanabFees() {
           Showing {MONTHS[selectedMonth-1]} {selectedYear}
         </div>
         <div className="flex gap-3 items-center">
+          <Input 
+            type="date" 
+            value={filterDate}
+            onChange={(e) => setFilterDate(e.target.value)}
+            className="w-auto h-10 bg-white/70 dark:bg-primary-900/40"
+            title="Filter by payment date"
+          />
+          {filterDate && (
+            <Button variant="ghost" size="sm" onClick={() => setFilterDate('')} className="h-10 px-2 text-ink/50 hover:text-ink">
+              Clear
+            </Button>
+          )}
           <Button variant="outline" size="sm" onClick={handleGenerateFees} disabled={generating} className="h-10">
             {generating ? (
               <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -196,7 +221,7 @@ export function JanabFees() {
           <Button variant="outline" size="sm" onClick={handleExport} className="h-10">
             <Download className="mr-2 h-4 w-4" /> Export Excel
           </Button>
-          <SearchBar value={query} onChange={setQuery} className="sm:w-72" />
+          <SearchBar value={query} onChange={setQuery} placeholder="Search by name, ID, ITS or Fee Amount..." className="sm:w-72" />
         </div>
       </div>
 
