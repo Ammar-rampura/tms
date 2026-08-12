@@ -229,7 +229,6 @@ export function JanabStudents() {
                 <th className="px-4 py-3 font-semibold">ITS PWD</th>
                 <th className="px-4 py-3 font-semibold">Age</th>
                 <th className="px-4 py-3 font-semibold">Hifz</th>
-                <th className="px-4 py-3 font-semibold">Fee</th>
                 <th className="px-4 py-3 font-semibold">Registered</th>
                 <th className="px-4 py-3 text-right font-semibold">Actions</th>
               </tr>
@@ -270,7 +269,6 @@ export function JanabStudents() {
                       <span className="text-xs text-ink/40 dark:text-primary-100/40">Not Started</span>
                     )}
                   </td>
-                  <td className="px-4 py-3"><FeeStatusBadge status={student.feeStatus} /></td>
                   <td className="px-4 py-3 text-ink/55 dark:text-primary-100/55">{formatDate(student.createdDate)}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-end gap-1.5">

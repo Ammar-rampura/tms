@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import type { Student } from '@/types'
-import { FeeStatusBadge, MarhalaBadge } from './StatusBadge'
+import { MarhalaBadge } from './StatusBadge'
 import { getMarhalaStatus } from '@/lib/quran'
 import { formatCurrency, initials } from '@/lib/utils'
 import { ArrowUpRight } from 'lucide-react'
@@ -34,11 +34,6 @@ export function StudentCard({ student, index = 0 }: { student: Student; index?: 
       </div>
       <div className="mt-4 flex items-center gap-2">
         <MarhalaBadge status={getMarhalaStatus(student.completedJuz || [])} />
-        <FeeStatusBadge status={student.feeStatus} />
-      </div>
-      <div className="mt-3 flex items-center justify-between text-sm">
-        <span className="text-ink/50 dark:text-primary-100/50">Due</span>
-        <span className="font-mono font-semibold text-ink dark:text-primary-50">{formatCurrency(student.dueAmount)}</span>
       </div>
     </motion.div>
   )
