@@ -69,7 +69,7 @@ function computeFeeStatus(paid: number, due: number): Student['feeStatus'] {
   return 'Due'
 }
 
-const MONTHLY_FEE = 1000
+const MONTHLY_FEE = 0
 
 function databaseToStudent(row: DatabaseStudent): Student {
   return {

@@ -14,9 +14,10 @@ export function JanabOverview() {
   const stats = useMemo(() => {
     const collected = students.reduce((sum, s) => sum + s.paidAmount, 0)
     const pending = students.reduce((sum, s) => sum + s.dueAmount, 0)
+    const expected = students.reduce((sum, s) => sum + s.monthlyFee, 0)
     const today = new Date().toDateString()
     const todayRegs = students.filter((s) => new Date(s.createdDate).toDateString() === today).length
-    return { total: students.length, collected, pending, todayRegs }
+    return { total: students.length, collected, pending, expected, todayRegs }
   }, [students])
 
   const recent = students.slice(0, 4)
@@ -93,7 +94,7 @@ export function JanabOverview() {
           </div>
           <div className="my-4 flex items-end gap-2">
             <span className="font-display text-4xl font-bold text-primary-600 dark:text-primary-300">
-              {stats.total ? Math.round((stats.collected / (stats.total * 1000)) * 100) : 0}%
+              {stats.expected ? Math.round((stats.collected / stats.expected) * 100) : 0}%
             </span>
           </div>
           <Link to="/janab/students" className="text-sm font-semibold text-brass-600 hover:underline dark:text-brass-300">
