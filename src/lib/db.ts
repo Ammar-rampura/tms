@@ -1112,4 +1112,164 @@ export const db = {
       throw err
     }
   },
+
+  async getActiveBillingPeriod(): Promise<{ month: number; year: number }> {
+    try {
+      const { data: settings } = await supabase
+        .from('app_settings')
+        .select('active_billing_month, active_billing_year')
+        .eq('id', 1)
+        .maybeSingle()
+
+      if (settings?.active_billing_month && settings?.active_billing_year) {
+        return { month: settings.active_billing_month, year: settings.active_billing_year }
+      }
+
+      const { data: latest } = await supabase
+        .from('fee_records')
+        .select('billing_month, billing_year')
+        .order('billing_year', { ascending: false })
+        .order('billing_month', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (latest?.billing_month && latest?.billing_year) {
+        return { month: latest.billing_month, year: latest.billing_year }
+      }
+    } catch (err) {
+      console.warn('Failed to get active billing period:', err)
+    }
+
+    const now = new Date()
+    return { month: now.getMonth() + 1, year: now.getFullYear() }
+  },
+
+  async getStudentFeeRecords(studentId: string): Promise<FeeRecord[]> {
+    try {
+      const { data, error } = await supabase
+        .from('fee_records')
+        .select(`
+          *,
+          students (
+            id,
+            name,
+            its
+          )
+        `)
+        .eq('student_id', studentId)
+        .order('billing_year', { ascending: false })
+        .order('billing_month', { ascending: false })
+
+      if (error) handleDbError(error, 'fetching student fee records')
+
+      const mapToFeeRecord = (r: any): FeeRecord => ({
+        id: r.id,
+        studentId: r.student_id,
+        studentName: (Array.isArray(r.students) ? r.students[0]?.name : r.students?.name) || '',
+        studentIts: (Array.isArray(r.students) ? r.students[0]?.its : r.students?.its) || '',
+        billingMonth: r.billing_month,
+        billingYear: r.billing_year,
+        billingDate: r.billing_date,
+        dueDate: r.due_date,
+        originalFee: r.original_fee || 0,
+        scholarshipAmount: r.scholarship_amount || 0,
+        amount: r.amount,
+        paidAmount: r.paid_amount,
+        status: r.status,
+        paymentDate: r.payment_date,
+        paymentMethod: r.payment_method,
+        receiptNumber: r.receipt_number,
+        remarks: r.remarks,
+        remark: r.remark,
+        outstandingBalance: 0,
+        outstandingRecords: []
+      })
+
+      return (data || []).map(mapToFeeRecord)
+    } catch (err) {
+      if (err instanceof Error) throw err
+      handleDbError(err, 'fetching student fee records')
+      return []
+    }
+  },
+
+  async getStudentFeeRecordByMonth(studentId: string, month: number, year: number): Promise<FeeRecord | null> {
+    try {
+      const { data: record, error } = await supabase
+        .from('fee_records')
+        .select(`
+          *,
+          students (
+            id,
+            name,
+            its
+          )
+        `)
+        .eq('student_id', studentId)
+        .eq('billing_month', month)
+        .eq('billing_year', year)
+        .maybeSingle()
+
+      if (error) handleDbError(error, 'fetching student fee record for month')
+      if (!record) return null
+
+      // Also fetch historical unpaid records for this student before this billing month
+      const { data: historicalRecords } = await supabase
+        .from('fee_records')
+        .select(`
+          *,
+          students (
+            id,
+            name,
+            its
+          )
+        `)
+        .eq('student_id', studentId)
+        .in('status', ['Pending', 'Partially Paid'])
+        .or(`billing_year.lt.${year},and(billing_year.eq.${year},billing_month.lt.${month})`)
+        .order('billing_year', { ascending: true })
+        .order('billing_month', { ascending: true })
+
+      const mapToFeeRecord = (r: any): FeeRecord => ({
+        id: r.id,
+        studentId: r.student_id,
+        studentName: (Array.isArray(r.students) ? r.students[0]?.name : r.students?.name) || '',
+        studentIts: (Array.isArray(r.students) ? r.students[0]?.its : r.students?.its) || '',
+        billingMonth: r.billing_month,
+        billingYear: r.billing_year,
+        billingDate: r.billing_date,
+        dueDate: r.due_date,
+        originalFee: r.original_fee || 0,
+        scholarshipAmount: r.scholarship_amount || 0,
+        amount: r.amount,
+        paidAmount: r.paid_amount,
+        status: r.status,
+        paymentDate: r.payment_date,
+        paymentMethod: r.payment_method,
+        receiptNumber: r.receipt_number,
+        remarks: r.remarks,
+        remark: r.remark,
+        outstandingBalance: 0,
+        outstandingRecords: []
+      })
+
+      const feeRec = mapToFeeRecord(record)
+      let outstandingBalance = 0
+      const outstandingList: FeeRecord[] = []
+
+      for (const hr of (historicalRecords || [])) {
+        outstandingBalance += Math.max(0, hr.amount - hr.paid_amount)
+        outstandingList.push(mapToFeeRecord(hr))
+      }
+
+      feeRec.outstandingBalance = outstandingBalance
+      feeRec.outstandingRecords = outstandingList
+
+      return feeRec
+    } catch (err) {
+      if (err instanceof Error) throw err
+      handleDbError(err, 'fetching student fee record by month')
+      return null
+    }
+  },
 }

@@ -13,20 +13,80 @@ import { Skeleton } from '@/components/Skeleton'
 import { Button } from '@/components/ui/button'
 import { BookOpenText, KeyRound } from 'lucide-react'
 import { ChangePasswordDialog } from '@/components/ChangePasswordDialog'
+import type { FeeRecord, PaymentRecord } from '@/types'
+
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June", 
+  "July", "August", "September", "October", "November", "December"
+]
 
 export function StudentDashboard() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [student, setStudent] = useState<Student | null>(null)
+  const [feeRecord, setFeeRecord] = useState<FeeRecord | null>(null)
+  const [paymentHistory, setPaymentHistory] = useState<PaymentRecord[]>([])
+  const [activeMonthLabel, setActiveMonthLabel] = useState('')
   const [loading, setLoading] = useState(true)
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false)
 
   useEffect(() => {
     if (!user) return
-    db.getById(user.id).then((s) => {
-      setStudent(s)
-      setLoading(false)
-    })
+    let isMounted = true
+
+    async function loadData() {
+      try {
+        const [s, period] = await Promise.all([
+          db.getById(user!.id),
+          db.getActiveBillingPeriod()
+        ])
+        
+        if (!isMounted) return
+        setStudent(s)
+        setActiveMonthLabel(`${MONTHS[period.month - 1]} ${period.year}`)
+
+        if (s) {
+          const [activeRec, allRecs] = await Promise.all([
+            db.getStudentFeeRecordByMonth(s.id, period.month, period.year),
+            db.getStudentFeeRecords(s.id)
+          ])
+
+          if (!isMounted) return
+          setFeeRecord(activeRec)
+
+          const list: PaymentRecord[] = []
+          for (const r of allRecs) {
+            if (r.paidAmount > 0) {
+              list.push({
+                id: r.id,
+                date: r.paymentDate || r.billingDate || new Date().toISOString(),
+                amount: r.paidAmount,
+                note: `${r.paymentMethod || 'Cash'} - ${MONTHS[r.billingMonth - 1]} ${r.billingYear}${r.remark ? ` (${r.remark})` : ''}`
+              })
+            }
+          }
+
+          if (s.paymentHistory) {
+            const existingIds = new Set(list.map(p => p.id))
+            for (const p of s.paymentHistory) {
+              if (!existingIds.has(p.id)) {
+                list.push(p)
+              }
+            }
+          }
+
+          list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+          setPaymentHistory(list)
+        }
+      } catch (err) {
+        console.error('Failed to load student dashboard data:', err)
+      } finally {
+        if (isMounted) setLoading(false)
+      }
+    }
+
+    loadData()
+    return () => { isMounted = false }
   }, [user])
 
   function handleLogout() {
@@ -76,12 +136,12 @@ export function StudentDashboard() {
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <ProfileCard student={student} />
-              <FeeCard student={student} />
+              <FeeCard student={student} feeRecord={feeRecord} monthLabel={activeMonthLabel ? `Billing Month: ${activeMonthLabel}` : undefined} />
             </div>
 
             <div className="card-surface p-5">
               <h3 className="mb-4 font-display text-base font-semibold text-ink dark:text-primary-50">Payment History</h3>
-              <PaymentHistoryTable history={student.paymentHistory} />
+              <PaymentHistoryTable history={paymentHistory} />
             </div>
 
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">

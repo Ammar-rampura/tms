@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Wallet, IndianRupee, Users, Download, AlertTriangle } from 'lucide-react'
+import { Wallet, IndianRupee, Users, Download, AlertTriangle, AlertCircle, Filter } from 'lucide-react'
 import { exportToCsv } from '@/lib/export'
 import { SearchBar } from '@/components/SearchBar'
 import { FeeStatusBadge } from '@/components/StatusBadge'
@@ -24,6 +24,7 @@ export function JanabFees() {
   const { students } = useData()
   const [query, setQuery] = useState('')
   const [filterDate, setFilterDate] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'due' | 'paid' | 'partial' | 'skipped'>('all')
   const [records, setRecords] = useState<FeeRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [collectionStats, setCollectionStats] = useState({ today: 0, monthly: 0, total: 0 })
@@ -59,8 +60,40 @@ export function JanabFees() {
     loadData(selectedMonth, selectedYear)
   }, [selectedMonth, selectedYear])
 
+  const counts = useMemo(() => {
+    let due = 0
+    let paid = 0
+    let partial = 0
+    let skipped = 0
+
+    for (const r of records) {
+      if (r.status === 'Skipped') {
+        skipped++
+      } else if (r.amount - r.paidAmount > 0) {
+        due++
+        if (r.paidAmount > 0) {
+          partial++
+        }
+      } else {
+        paid++
+      }
+    }
+
+    return { due, paid, partial, skipped }
+  }, [records])
+
   const filtered = useMemo(() => {
     let result = records
+
+    if (statusFilter === 'due') {
+      result = result.filter(r => r.status !== 'Skipped' && r.amount - r.paidAmount > 0)
+    } else if (statusFilter === 'paid') {
+      result = result.filter(r => r.status === 'Paid' || (r.status !== 'Skipped' && r.amount > 0 && r.amount === r.paidAmount) || (r.status !== 'Skipped' && r.amount === 0 && r.paidAmount === 0))
+    } else if (statusFilter === 'partial') {
+      result = result.filter(r => r.status === 'Partially Paid' || (r.paidAmount > 0 && r.amount > r.paidAmount))
+    } else if (statusFilter === 'skipped') {
+      result = result.filter(r => r.status === 'Skipped')
+    }
     
     if (filterDate) {
       result = result.filter(r => r.paymentDate && r.paymentDate.startsWith(filterDate))
@@ -77,7 +110,7 @@ export function JanabFees() {
              r.paidAmount.toString().includes(q) ||
              Math.max(0, r.amount - r.paidAmount).toString().includes(q)
     )
-  }, [records, query, filterDate])
+  }, [records, statusFilter, query, filterDate])
 
   const stats = useMemo(() => {
     const totalStudents = students.filter(s => s.status === 'active').length
@@ -195,11 +228,60 @@ export function JanabFees() {
         <StatsCard label="Total Collection" value={stats.totalCollection} prefix="₹" icon={Wallet} tone="primary" index={3} />
       </div>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-sm text-ink/60 font-medium">
-          Showing {MONTHS[selectedMonth-1]} {selectedYear}
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-wrap items-center gap-2.5">
+          <div className="text-sm text-ink/60 font-medium">
+            Showing {MONTHS[selectedMonth-1]} {selectedYear}
+          </div>
+
+          {/* Quick Due Only Filter Button */}
+          <Button
+            variant={statusFilter === 'due' ? 'danger' : 'outline'}
+            size="sm"
+            onClick={() => setStatusFilter(statusFilter === 'due' ? 'all' : 'due')}
+            className={`h-10 px-3.5 font-medium gap-2 transition-all ${
+              statusFilter === 'due'
+                ? 'bg-red-600 hover:bg-red-700 text-white border-red-600 shadow-sm'
+                : 'text-red-600 dark:text-red-400 border-red-500/30 hover:bg-red-500/10'
+            }`}
+            title="Filter to show only students who have not paid fees"
+          >
+            <AlertCircle className="h-4 w-4" />
+            <span>Due Only</span>
+            <span className={`rounded-full px-2 py-0.5 text-xs font-mono font-bold ${
+              statusFilter === 'due' ? 'bg-white text-red-700' : 'bg-red-500/15 text-red-600 dark:text-red-300'
+            }`}>
+              {counts.due}
+            </span>
+          </Button>
+
+          {/* Status Filter Dropdown */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as any)}
+            className="h-10 rounded-xl border border-primary-900/15 bg-white/70 px-3 text-sm font-medium text-ink dark:border-primary-100/15 dark:bg-primary-900/40 dark:text-primary-50"
+            title="Filter by fee status"
+          >
+            <option value="all">All Statuses ({records.length})</option>
+            <option value="due">Due / Unpaid ({counts.due})</option>
+            <option value="partial">Partial ({counts.partial})</option>
+            <option value="paid">Paid ({counts.paid})</option>
+            <option value="skipped">Skipped ({counts.skipped})</option>
+          </select>
+
+          {statusFilter !== 'all' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setStatusFilter('all')}
+              className="h-10 px-2 text-xs text-ink/50 hover:text-ink"
+            >
+              Reset filter
+            </Button>
+          )}
         </div>
-        <div className="flex gap-3 items-center">
+
+        <div className="flex flex-wrap gap-3 items-center">
           <Input 
             type="date" 
             value={filterDate}
@@ -232,7 +314,16 @@ export function JanabFees() {
       ) : filtered.length === 0 ? (
         <div className="card-surface flex flex-col items-center justify-center gap-2 p-16 text-center">
           <Users className="h-9 w-9 text-ink/25" />
-          <p className="font-medium text-ink/60 dark:text-primary-100/60">No matching records for {MONTHS[selectedMonth-1]} {selectedYear}</p>
+          <p className="font-medium text-ink/60 dark:text-primary-100/60">
+            {statusFilter === 'due'
+              ? `No students have due fees for ${MONTHS[selectedMonth-1]} ${selectedYear}. All fees are cleared!`
+              : `No matching records for ${MONTHS[selectedMonth-1]} ${selectedYear}`}
+          </p>
+          {statusFilter !== 'all' && (
+            <Button variant="outline" size="sm" onClick={() => setStatusFilter('all')} className="mt-2">
+              View All Students ({records.length})
+            </Button>
+          )}
         </div>
       ) : (
         <div className="card-surface overflow-x-auto">
