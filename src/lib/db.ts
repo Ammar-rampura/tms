@@ -17,9 +17,9 @@ interface DatabaseStudent {
   its_password?: string | null
   mobile: string
   father_name: string
-  father_its: string
+  father_its: string | null
   mother_name: string
-  mother_its: string
+  mother_its: string | null
   father_mobile: string
   mother_mobile: string
   email: string
@@ -81,9 +81,9 @@ function databaseToStudent(row: DatabaseStudent): Student {
     itsPassword: row.its_password || undefined,
     mobile: row.mobile,
     fatherName: row.father_name,
-    fatherIts: row.father_its,
+    fatherIts: row.father_its || undefined,
     motherName: row.mother_name,
-    motherIts: row.mother_its,
+    motherIts: row.mother_its || undefined,
     fatherMobile: row.father_mobile,
     motherMobile: row.mother_mobile,
     email: row.email,
@@ -111,9 +111,9 @@ function studentToDatabase(student: Student): DatabaseStudent {
     its_password: student.itsPassword || null,
     mobile: student.mobile,
     father_name: student.fatherName,
-    father_its: student.fatherIts,
+    father_its: student.fatherIts || null,
     mother_name: student.motherName,
-    mother_its: student.motherIts,
+    mother_its: student.motherIts || null,
     father_mobile: student.fatherMobile,
     mother_mobile: student.motherMobile,
     email: student.email,
@@ -839,7 +839,8 @@ export const db = {
           students (
             id,
             name,
-            its
+            its,
+            status
           )
         `)
         .eq('billing_month', month)
@@ -854,7 +855,8 @@ export const db = {
           students (
             id,
             name,
-            its
+            its,
+            status
           )
         `)
         .in('status', ['Pending', 'Partially Paid'])
@@ -879,6 +881,7 @@ export const db = {
         studentId: r.student_id,
         studentName: (Array.isArray(r.students) ? r.students[0]?.name : r.students?.name) || '',
         studentIts: (Array.isArray(r.students) ? r.students[0]?.its : r.students?.its) || '',
+        studentStatus: (Array.isArray(r.students) ? r.students[0]?.status : r.students?.status) || 'active',
         billingMonth: r.billing_month,
         billingYear: r.billing_year,
         billingDate: r.billing_date,
@@ -899,6 +902,10 @@ export const db = {
 
       const result: FeeRecord[] = []
       for (const cr of (currentRecords || [])) {
+        const studentInfo = Array.isArray(cr.students) ? cr.students[0] : cr.students
+        if (studentInfo && studentInfo.status === 'inactive') {
+          continue
+        }
         const feeRec = mapToFeeRecord(cr)
         
         const history = historicalByStudent[cr.student_id] || []
@@ -1068,7 +1075,7 @@ export const db = {
 
       const { data: record, error: fetchError } = await supabase
         .from('fee_records')
-        .select('paid_amount')
+        .select('student_id, paid_amount')
         .eq('id', recordId)
         .single()
       
@@ -1106,6 +1113,14 @@ export const db = {
         .eq('id', recordId)
 
       if (updateError) handleDbError(updateError, 'updating fee record')
+
+      // Sync recurring monthly fee in students table so it continues in all future months
+      if (record?.student_id && !isSkipped) {
+        await supabase
+          .from('students')
+          .update({ monthly_fee: originalFee })
+          .eq('id', record.student_id)
+      }
     } catch (err) {
       if (err instanceof Error) throw err
       handleDbError(err, 'updating fee record')
@@ -1153,7 +1168,8 @@ export const db = {
           students (
             id,
             name,
-            its
+            its,
+            status
           )
         `)
         .eq('student_id', studentId)
@@ -1202,7 +1218,8 @@ export const db = {
           students (
             id,
             name,
-            its
+            its,
+            status
           )
         `)
         .eq('student_id', studentId)
@@ -1221,7 +1238,8 @@ export const db = {
           students (
             id,
             name,
-            its
+            its,
+            status
           )
         `)
         .eq('student_id', studentId)

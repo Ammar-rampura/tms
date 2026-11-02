@@ -18,9 +18,9 @@ export interface Student {
   itsPassword?: string
   mobile: string
   fatherName: string
-  fatherIts: string
+  fatherIts?: string
   motherName: string
-  motherIts: string
+  motherIts?: string
   fatherMobile: string
   motherMobile: string
   email: string
@@ -52,9 +52,9 @@ export interface RegistrationInput {
   itsPassword?: string
   mobile: string
   fatherName: string
-  fatherIts: string
+  fatherIts?: string
   motherName: string
-  motherIts: string
+  motherIts?: string
   fatherMobile: string
   motherMobile: string
   email: string
@@ -87,6 +87,7 @@ export interface DatabaseFeeRecord {
     id: string
     name: string
     its: string
+    status?: 'active' | 'inactive'
   }
 }
 
@@ -95,6 +96,7 @@ export interface FeeRecord {
   studentId: string
   studentName: string
   studentIts: string
+  studentStatus?: 'active' | 'inactive'
   billingMonth: number
   billingYear: number
   billingDate: string

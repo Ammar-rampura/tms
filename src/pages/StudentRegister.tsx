@@ -22,9 +22,9 @@ const schema = z.object({
   itsPassword: z.string().optional(),
   mobile: z.string().regex(/^\d{10}$/, 'Enter a valid 10-digit mobile number'),
   fatherName: z.string().min(2, "Father's name is required"),
-  fatherIts: z.string().regex(/^\d{8}$/, "Father's ITS must be exactly 8 digits"),
+  fatherIts: z.string().optional().refine((val) => !val || /^\d{8}$/.test(val), { message: "Father's ITS must be exactly 8 digits if provided" }),
   motherName: z.string().min(2, "Mother's name is required"),
-  motherIts: z.string().regex(/^\d{8}$/, "Mother's ITS must be exactly 8 digits"),
+  motherIts: z.string().optional().refine((val) => !val || /^\d{8}$/.test(val), { message: "Mother's ITS must be exactly 8 digits if provided" }),
   fatherMobile: z.string().regex(/^\d{10}$/, 'Enter a valid 10-digit mobile number'),
   motherMobile: z.string().regex(/^\d{10}$/, 'Enter a valid 10-digit mobile number'),
   email: z.string().email('Enter a valid email address'),
@@ -200,7 +200,7 @@ export function StudentRegister() {
                     <FieldError>{errors.fatherName?.message}</FieldError>
                   </div>
                   <div>
-                    <Label>Father's ITS</Label>
+                    <Label>Father's ITS <span className="text-xs text-ink/40 dark:text-primary-100/40 font-normal">(Optional)</span></Label>
                     <Input placeholder="8-digit ITS number" {...register('fatherIts')} error={!!errors.fatherIts} />
                     <FieldError>{errors.fatherIts?.message}</FieldError>
                   </div>
@@ -210,7 +210,7 @@ export function StudentRegister() {
                     <FieldError>{errors.motherName?.message}</FieldError>
                   </div>
                   <div>
-                    <Label>Mother's ITS</Label>
+                    <Label>Mother's ITS <span className="text-xs text-ink/40 dark:text-primary-100/40 font-normal">(Optional)</span></Label>
                     <Input placeholder="8-digit ITS number" {...register('motherIts')} error={!!errors.motherIts} />
                     <FieldError>{errors.motherIts?.message}</FieldError>
                   </div>

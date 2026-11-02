@@ -83,7 +83,7 @@ export function JanabFees() {
   }, [records])
 
   const filtered = useMemo(() => {
-    let result = records
+    let result = records.filter(r => r.studentStatus !== 'inactive')
 
     if (statusFilter === 'due') {
       result = result.filter(r => r.status !== 'Skipped' && r.amount - r.paidAmount > 0)
