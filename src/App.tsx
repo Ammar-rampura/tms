@@ -8,6 +8,7 @@ import { JanabOverview } from '@/pages/janab/JanabOverview'
 import { JanabStudents } from '@/pages/janab/JanabStudents'
 import { JanabStudentProfile } from '@/pages/janab/JanabStudentProfile'
 import { JanabFees } from '@/pages/janab/JanabFees'
+import { JanabLeaderboard } from '@/pages/janab/JanabLeaderboard'
 import { AccountsLayout } from '@/pages/accounts/AccountsLayout'
 import { AccountsOverview } from '@/pages/accounts/AccountsOverview'
 import { ProtectedRoute } from '@/routes/ProtectedRoute'
@@ -30,6 +31,7 @@ function App() {
             <Route path="students" element={<JanabStudents />} />
             <Route path="students/:id" element={<JanabStudentProfile />} />
             <Route path="fees" element={<JanabFees />} />
+            <Route path="leaderboard" element={<JanabLeaderboard />} />
           </Route>
         </Route>
 
