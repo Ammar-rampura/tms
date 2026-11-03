@@ -6,6 +6,8 @@ import { useNavigate } from 'react-router-dom'
 import { db } from '@/lib/db'
 import type { Student } from '@/types'
 import { ProfileCard } from '@/components/ProfileCard'
+import { StudentIdCard } from '@/components/StudentIdCard'
+import { IdCard } from 'lucide-react'
 import { FeeCard } from '@/components/FeeCard'
 import { PaymentHistoryTable } from '@/components/PaymentHistoryTable'
 import { DarkModeToggle } from '@/components/DarkModeToggle'
@@ -134,9 +136,18 @@ export function StudentDashboard() {
               <p className="text-sm text-ink/55 dark:text-primary-100/55">Here is your profile and fee overview.</p>
             </motion.div>
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              <ProfileCard student={student} />
-              <FeeCard student={student} feeRecord={feeRecord} monthLabel={activeMonthLabel ? `Billing Month: ${activeMonthLabel}` : undefined} />
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 items-start">
+              <div className="lg:col-span-2 space-y-6">
+                <ProfileCard student={student} />
+                <FeeCard student={student} feeRecord={feeRecord} monthLabel={activeMonthLabel ? `Billing Month: ${activeMonthLabel}` : undefined} />
+              </div>
+              <div className="lg:col-span-1">
+                <div className="mb-3 flex items-center gap-2">
+                  <IdCard className="h-4 w-4 text-primary-600 dark:text-brass-400" />
+                  <h3 className="font-display text-base font-semibold text-ink dark:text-primary-50">Digital ID Card</h3>
+                </div>
+                <StudentIdCard student={student} />
+              </div>
             </div>
 
             <div className="card-surface p-5">

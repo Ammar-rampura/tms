@@ -3,6 +3,8 @@ import { useNavigate, useParams, Link } from 'react-router-dom'
 import { ArrowLeft, Save, Trash2, AlertTriangle } from 'lucide-react'
 import { useData } from '@/context/DataContext'
 import { ProfileCard } from '@/components/ProfileCard'
+import { StudentIdCard } from '@/components/StudentIdCard'
+import { IdCard } from 'lucide-react'
 import { FeeCard } from '@/components/FeeCard'
 import { FeeStatusBadge } from '@/components/StatusBadge'
 import { PaymentHistoryTable } from '@/components/PaymentHistoryTable'
@@ -207,9 +209,10 @@ export function JanabStudentProfile() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.1fr_1fr]">
-        <ProfileCard student={student} />
-        <FeeCard
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 items-start">
+        <div className="lg:col-span-2 space-y-6">
+          <ProfileCard student={student} />
+          <FeeCard
           student={student}
           feeRecord={activeFeeRecord}
           monthLabel={`Showing ${MONTHS[selectedMonth - 1]} ${selectedYear}`}
@@ -240,6 +243,14 @@ export function JanabStudentProfile() {
             </div>
           }
         />
+        </div>
+        <div className="lg:col-span-1">
+          <div className="mb-3 flex items-center gap-2">
+            <IdCard className="h-4 w-4 text-primary-600 dark:text-brass-400" />
+            <h3 className="font-display text-base font-semibold text-ink dark:text-primary-50">Student ID Card</h3>
+          </div>
+          <StudentIdCard student={student} />
+        </div>
       </div>
 
       <div className="card-surface p-6">
