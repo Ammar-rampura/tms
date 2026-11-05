@@ -1,6 +1,36 @@
-import type { PaymentRecord, RegistrationInput, Student, FeeRecord, PaymentResult, PaymentResultRecord } from '@/types'
+import type { PaymentRecord, RegistrationInput, Student, FeeRecord, PaymentResult, PaymentResultRecord, Musaeden, MusaedenRegistrationInput } from '@/types'
 import { supabase } from '@/lib/supabase'
 import bcrypt from 'bcryptjs'
+
+
+export interface DatabaseMusaeden {
+  id: string
+  password?: string
+  name: string
+  its: string
+  gender: 'Male' | 'Female'
+  mobile: string
+  email?: string | null
+  address?: string | null
+  status: 'active' | 'inactive'
+  created_at?: string
+  updated_at?: string
+}
+
+function databaseToMusaeden(row: DatabaseMusaeden): Musaeden {
+  return {
+    id: row.id,
+    password: row.password,
+    name: row.name,
+    its: row.its,
+    gender: row.gender,
+    mobile: row.mobile,
+    email: row.email || undefined,
+    address: row.address || undefined,
+    status: row.status,
+    createdAt: row.created_at,
+  }
+}
 
 export interface DatabaseStaff {
   role: 'janab' | 'accounts'
@@ -294,6 +324,161 @@ export const db = {
     } catch (err) {
       if (err instanceof Error) throw err
       handleDbError(err, 'fetching student by id')
+    }
+  },
+
+
+  async authenticateMusaeden(idOrIts: string, password: string): Promise<Musaeden | null> {
+    try {
+      const term = idOrIts.trim()
+      const { data, error } = await supabase
+        .from('musaeden')
+        .select('*')
+        .or(`id.eq.${term},its.eq.${term}`)
+        .single()
+
+      if (error) {
+        if (error.code === 'PGRST116') return null
+        handleDbError(error, 'authenticating musaeden')
+      }
+
+      if (data && data.password) {
+        const isValid = bcrypt.compareSync(password, data.password)
+        if (isValid) {
+          return databaseToMusaeden(data as DatabaseMusaeden)
+        }
+      }
+
+      return null
+    } catch (err) {
+      if (err instanceof Error) throw err
+      handleDbError(err, 'authenticating musaeden')
+    }
+  },
+
+  async registerMusaeden(input: MusaedenRegistrationInput): Promise<Musaeden> {
+    try {
+      // Check duplicate ITS
+      const { data: existingIts, error: checkError } = await supabase
+        .from('musaeden')
+        .select('id')
+        .eq('its', input.its)
+        .maybeSingle()
+
+      if (checkError && checkError.code !== 'PGRST116') handleDbError(checkError, 'checking duplicate ITS for musaeden')
+      if (existingIts) throw new Error('Musaed with this ITS already exists')
+
+      // Generate next MSD ID
+      const { data: allIds, error: fetchError } = await supabase
+        .from('musaeden')
+        .select('id')
+
+      if (fetchError && fetchError.code !== 'PGRST205') handleDbError(fetchError, 'generating musaeden id')
+
+      let maxNum = 0
+      if (allIds && allIds.length > 0) {
+        for (const record of allIds) {
+          if (record.id && record.id.startsWith('MSD')) {
+            const num = parseInt(record.id.replace('MSD', ''), 10)
+            if (!isNaN(num) && num > maxNum) maxNum = num
+          }
+        }
+      }
+
+      const nextId = `MSD${String(maxNum + 1).padStart(4, '0')}`
+      const rawPassword = generatePassword()
+      const hashedPassword = bcrypt.hashSync(rawPassword, 10)
+
+      const dbRow: DatabaseMusaeden = {
+        id: nextId,
+        password: hashedPassword,
+        name: input.name,
+        its: input.its,
+        gender: input.gender,
+        mobile: input.mobile,
+        email: input.email || null,
+        address: input.address || null,
+        status: 'active',
+      }
+
+      const { data, error: insertError } = await supabase
+        .from('musaeden')
+        .insert(dbRow)
+        .select()
+        .single()
+
+      if (insertError) handleDbError(insertError, 'registering musaeden')
+
+      const result = databaseToMusaeden(data as DatabaseMusaeden)
+      result.password = rawPassword // return plaintext password for one-time display
+      return result
+    } catch (err) {
+      if (err instanceof Error) throw err
+      handleDbError(err, 'registering musaeden')
+    }
+  },
+
+  async getMusaedenById(id: string): Promise<Musaeden | null> {
+    try {
+      const { data, error } = await supabase
+        .from('musaeden')
+        .select('*')
+        .eq('id', id)
+        .single()
+
+      if (error) {
+        if (error.code === 'PGRST116') return null
+        handleDbError(error, 'fetching musaeden')
+      }
+
+      return data ? databaseToMusaeden(data as DatabaseMusaeden) : null
+    } catch (err) {
+      if (err instanceof Error) throw err
+      handleDbError(err, 'fetching musaeden')
+    }
+  },
+
+  async getAllMusaedeen(): Promise<Musaeden[]> {
+    try {
+      const { data, error } = await supabase
+        .from('musaeden')
+        .select('*')
+        .order('name', { ascending: true })
+
+      if (error) handleDbError(error, 'fetching all musaedeen')
+      return (data || []).map(databaseToMusaeden)
+    } catch (err) {
+      if (err instanceof Error) throw err
+      handleDbError(err, 'fetching all musaedeen')
+      return []
+    }
+  },
+
+  async updateMusaedenPassword(id: string, currentPassword: string, newPassword: string): Promise<boolean> {
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('musaeden')
+        .select('password')
+        .eq('id', id)
+        .single()
+
+      if (fetchError) handleDbError(fetchError, 'fetching musaeden password')
+      if (!data || !data.password) return false
+
+      const isValid = bcrypt.compareSync(currentPassword, data.password)
+      if (!isValid) throw new Error('Incorrect current password')
+
+      const hashedNewPassword = bcrypt.hashSync(newPassword, 10)
+      const { error: updateError } = await supabase
+        .from('musaeden')
+        .update({ password: hashedNewPassword, updated_at: new Date().toISOString() })
+        .eq('id', id)
+
+      if (updateError) handleDbError(updateError, 'updating musaeden password')
+      return true
+    } catch (err) {
+      if (err instanceof Error) throw err
+      handleDbError(err, 'updating musaeden password')
     }
   },
 

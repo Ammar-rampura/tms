@@ -37,7 +37,7 @@ export interface Student {
   status: 'active' | 'inactive'
 }
 
-export type Role = 'janab' | 'accounts' | 'student'
+export type Role = 'janab' | 'accounts' | 'student' | 'musaeden'
 
 export interface AuthUser {
   role: Role
@@ -130,4 +130,26 @@ export interface PaymentResult {
   recordsUpdated: number
   remainingAmount: number
   updatedRecords: PaymentResultRecord[]
+}
+
+export interface Musaeden {
+  id: string
+  password?: string
+  name: string
+  its: string
+  gender: 'Male' | 'Female'
+  mobile: string
+  email?: string
+  address?: string
+  status: 'active' | 'inactive'
+  createdAt?: string
+}
+
+export interface MusaedenRegistrationInput {
+  name: string
+  its: string
+  gender: 'Male' | 'Female'
+  mobile: string
+  email?: string
+  address?: string
 }

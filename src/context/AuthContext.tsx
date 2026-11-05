@@ -9,6 +9,7 @@ interface AuthContextValue {
   loading: boolean
   loginStaff: (role: 'janab' | 'accounts', username: string, password: string) => Promise<boolean>
   loginStudent: (studentId: string, password: string) => Promise<boolean>
+  loginMusaeden: (idOrIts: string, password: string) => Promise<boolean>
   logout: () => void
 }
 
@@ -51,12 +52,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return true
   }
 
+  async function loginMusaeden(idOrIts: string, password: string) {
+    const musaed = await db.authenticateMusaeden(idOrIts, password)
+    if (!musaed) return false
+    persist({ role: 'musaeden', id: musaed.id, name: musaed.name })
+    return true
+  }
+
   function logout() {
     persist(null)
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, loginStaff, loginStudent, logout }}>
+    <AuthContext.Provider value={{ user, loading, loginStaff, loginStudent, loginMusaeden, logout }}>
       {children}
     </AuthContext.Provider>
   )

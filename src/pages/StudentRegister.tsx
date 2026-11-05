@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -302,6 +302,16 @@ export function StudentRegister() {
               )}
             </div>
           </form>
+
+          {/* Already registered existing profile link */}
+          <div className="mt-5 rounded-xl border border-primary-900/10 bg-primary-900/[0.02] p-4 text-center dark:border-primary-100/10 dark:bg-primary-100/[0.02]">
+            <p className="text-xs text-ink/60 dark:text-primary-100/60">
+              Already registered as a Student?{' '}
+              <Link to="/login" className="font-semibold text-primary-600 hover:underline dark:text-brass-300">
+                Sign in with your Student ID / ITS →
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>
